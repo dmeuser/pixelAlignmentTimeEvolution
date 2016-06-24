@@ -118,5 +118,5 @@ if __name__ == "__main__":
     for run in runs:
         print "Get run", run
         data = dqm_get_json(serverurl, str(run), dataset, folder)
-        saveAsFile(data, run, ouputFolder)
+        saveAsFile(data, run, outputFolder)
 
