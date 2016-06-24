@@ -13,24 +13,25 @@ import subprocess
 import math
 
 import ROOT
-ROOT.gStyle.SetOptStat(0)
-ROOT.gROOT.SetBatch()
-st = ROOT.gStyle
-st.SetPadTopMargin(0.08)
-st.SetPadBottomMargin(0.1)
-st.SetPadLeftMargin(0.09)
-st.SetPadRightMargin(0.00)
 
-textSize = 0.05
-st.SetLabelSize(textSize, "xyz")
-st.SetTitleSize(textSize, "xyz")
-st.SetTextFont(st.GetLabelFont())
-st.SetTextSize(.8*st.GetLabelSize())
-st.SetTitleOffset(1.1, "x")
-st.SetTitleOffset(.9, "y")
-st.SetPadTickX(1)
-st.SetPadTickY(1)
-ROOT.TGaxis.SetMaxDigits(6)
+def style():
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gROOT.SetBatch()
+    st = ROOT.gStyle
+    st.SetPadTopMargin(0.08)
+    st.SetPadBottomMargin(0.1)
+    st.SetPadLeftMargin(0.09)
+    st.SetPadRightMargin(0.00)
+    textSize = 0.05
+    st.SetLabelSize(textSize, "xyz")
+    st.SetTitleSize(textSize, "xyz")
+    st.SetTextFont(st.GetLabelFont())
+    st.SetTextSize(.8*st.GetLabelSize())
+    st.SetTitleOffset(1.1, "x")
+    st.SetTitleOffset(.9, "y")
+    st.SetPadTickX(1)
+    st.SetPadTickY(1)
+    ROOT.TGaxis.SetMaxDigits(6)
 
 class Parameter:
     name = ""
@@ -61,6 +62,7 @@ objects = [
     ("FPIX(x+,z+)", ROOT.kGreen+2),
     ("FPIX(x-,z+)", ROOT.kMagenta),
 ]
+
 
 def save(name):
     ROOT.gPad.SaveAs("plots/{}.pdf".format(name))
@@ -93,32 +95,29 @@ def getFromFile(filename, objectname):
     h = ROOT.gROOT.CloneObject(h)
     return h
 
-def getInputHistsPseudo():
-    hists = {}
-    for filename in glob.glob("/afs/cern.ch/user/k/kiesel/public/pp3.8T_PCL_Alignment/Results*/MinBias_2016/PCL_SiPixAl_DQM.root"):
-        runNr = runFromFilename(filename)
-        newHists = {}
-        c = getFromFile(filename, "PCL_SiPixAl_Expert")
-        for pad in c.GetListOfPrimitives():
-            pad.cd()
-            for x in pad.GetListOfPrimitives():
-                if isinstance(x, ROOT.TH1F):
-                    newHists[x.GetName()] = x.Clone()
-                    break
-        if newHists: hists[runNr] = newHists
-    return hists
+def sortedDict(d):
+    return collections.OrderedDict(sorted(d.items(), key=lambda t: t[0]))
 
-def getInputHists():
+def getInputHists(searchPath="root-files/Run*.root"):
     hists = {}
-    for filename in glob.glob("root-files/Run*.root"):
+    for filename in glob.glob(searchPath):
         runNr = runFromFilename(filename)
         newHists = {}
-        for p in parameters:
-            h = getFromFile(filename, p.name)
-            if h:
-                newHists[p.name] = h
+        if searchPath.endswith("PCL_SiPixAl_DQM.root"):
+            c = getFromFile(filename, "PCL_SiPixAl_Expert")
+            for pad in c.GetListOfPrimitives():
+                pad.cd()
+                for x in pad.GetListOfPrimitives():
+                    if isinstance(x, ROOT.TH1F):
+                        newHists[x.GetName()] = x.Clone()
+                        break
+        else: # dqm plots
+            for p in parameters:
+                h = getFromFile(filename, p.name)
+                if h:
+                    newHists[p.name] = h
         if newHists: hists[runNr] = newHists
-    return hists
+    return sortedDict(hists)
 
 def drawHistsVsRun(hmap, savename):
     line = ROOT.TLine()
@@ -142,7 +141,8 @@ def drawHistsVsRun(hmap, savename):
     textCMS.Draw()
     save(savename)
 
-def getHistsVsRun(inputHists):
+def getHistsVsRun(inputHists, minRun=-1):
+    inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
     hdefault = ROOT.TH1F("", ";;#Delta blub", len(inputHists), 0, len(inputHists))
     hdefault.SetLabelSize(.04)
     for bin, runNr in enumerate(inputHists.keys()):
@@ -159,7 +159,10 @@ def getHistsVsRun(inputHists):
                 histsVsRun[hname][bin-1].SetBinError(iRun+1,e)
     return histsVsRun
 
-def diffHistsVsRun(inputHists, inputHists2):
+def diffHistsVsRun(inputHists, inputHists2, minRun=-1):
+    inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
+    inputHists2 = sortedDict(dict((key,value) for key, value in inputHists2.iteritems() if key >= minRun))
+
     hdefault = ROOT.TH1F("", ";;#Delta blub", len(inputHists), 0, len(inputHists))
     hdefault.SetLabelSize(.04)
     for bin, runNr in enumerate(inputHists.keys()):
@@ -171,7 +174,7 @@ def diffHistsVsRun(inputHists, inputHists2):
         if runNr in inputHists:
             if runNr in inputHists2:
                 for hname, h in inputHists[runNr].iteritems():
-                    h2 = inputHists[runNr][hname]
+                    h2 = inputHists2[runNr][hname]
                     if hname not in histsVsRun: histsVsRun[hname] = [ hdefault.Clone() for i in range(6) ]
                     for bin in range(1,7):
                         c = h.GetBinContent(bin)
@@ -195,59 +198,20 @@ def copyToWebSpace(files=[]):
         shutil.copyfile("plots/{}.pdf".format(f), dest+f+".pdf")
         shutil.copyfile("plots/{}.png".format(f), dest+f+".png")
 
-def sortedDict(d):
-    return collections.OrderedDict(sorted(d.items(), key=lambda t: t[0]))
-
-def makePlotsPseudo():
-
+def main():
     todayStr = datetime.date.today().isoformat()
-
-    inputHists = getInputHistsPseudo()
-    inputHists = sortedDict(inputHists)
-
-    sortedRuns = sorted(inputHists.keys())
-    firstNewRun = sortedRuns[-min(10, len(sortedRuns))]
-    inputHists_newest = dict((key,value) for key, value in inputHists.iteritems() if key >= firstNewRun)
-    inputHists_newest = sortedDict(inputHists_newest)
-
-    histsVsRun = getHistsVsRun(inputHists)
-    drawHistsVsRun(histsVsRun, "pixAlignment_pseudo_all_{}".format(todayStr))
-
-    histsVsRun_newest = getHistsVsRun(inputHists_newest)
-    drawHistsVsRun(histsVsRun_newest, "pixAlignment_pseudo_newest_{}".format(todayStr))
-
-
-def makePlots():
     inputHists = getInputHists()
-    inputHists = sortedDict(inputHists)
-
+    inputHistsPseudo = getInputHists("/afs/cern.ch/user/k/kiesel/public/pp3.8T_PCL_Alignment/Results*/MinBias_2016/PCL_SiPixAl_DQM.root")
     sortedRuns = sorted(inputHists.keys())
     firstNewRun = sortedRuns[-min(10, len(sortedRuns))]
-    inputHists_newest = dict((key,value) for key, value in inputHists.iteritems() if key >= firstNewRun)
-    inputHists_newest = sortedDict(inputHists_newest)
 
-    histsVsRun = getHistsVsRun(inputHists)
-    drawHistsVsRun(histsVsRun, "pixAlignment_pcl_all_{}".format(todayStr))
+    drawHistsVsRun(getHistsVsRun(inputHists), "pixAlignment_pcl_all_{}".format(todayStr))
+    drawHistsVsRun(getHistsVsRun(inputHists, firstNewRun), "pixAlignment_pcl_newest_{}".format(todayStr))
+    drawHistsVsRun(getHistsVsRun(inputHistsPseudo), "pixAlignment_pseudo_all_{}".format(todayStr))
+    drawHistsVsRun(getHistsVsRun(inputHistsPseudo, firstNewRun), "pixAlignment_pseudo_newest_{}".format(todayStr))
+    drawHistsVsRun(diffHistsVsRun(inputHists, inputHistsPseudo), "pixAlignment_diff_all_{}".format(todayStr))
 
-    histsVsRun_newest = getHistsVsRun(inputHists_newest)
-    drawHistsVsRun(histsVsRun_newest, "pixAlignment_pcl_newest_{}".format(todayStr))
-
-def makePlotsDiff():
-    inputHists = sortedDict(getInputHists())
-    inputHistsPseudo = sortedDict(getInputHistsPseudo())
-
-    histsVsRunDiff = diffHistsVsRun(inputHists, inputHistsPseudo)
-    drawHistsVsRun(histsVsRunDiff, "pixAlignment_diff_all_{}".format(todayStr))
-
-    sortedRuns = sorted(inputHists.keys())
-    firstNewRun = sortedRuns[-min(10, len(sortedRuns))]
-    inputHists_newest = dict((key,value) for key, value in inputHists.iteritems() if key >= firstNewRun)
-    inputHists_newest = sortedDict(inputHists_newest)
-    inputHistsPseudo_newest = dict((key,value) for key, value in inputHistsPseudo.iteritems() if key >= firstNewRun)
-    inputHistsPseudo_newest = sortedDict(inputHistsPseudo_newest)
-
-    histsVsRunDiff_newest = diffHistsVsRun(inputHists_newest,inputHistsPseudo_newest)
-    drawHistsVsRun(histsVsRunDiff_newest, "pixAlignment_diff_newest_{}".format(todayStr))
+    drawHistsVsRun(diffHistsVsRun(inputHists, inputHistsPseudo, firstNewRun), "pixAlignment_diff_newest_{}".format(todayStr))
 
 
 
@@ -274,6 +238,7 @@ def copyToWeb():
         ]
     )
 
+style()
 todayStr = datetime.date.today().isoformat()
-makePlotsDiff()
+main()
 copyToWeb()
