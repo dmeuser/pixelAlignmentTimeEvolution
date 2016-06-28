@@ -77,7 +77,7 @@ def dqm_get_json(server, run, dataset, folder):
             { "__builtins__": None }, {})
 
 def saveAsFile(data, run, folder="./"):
-    f = TFile(folder+"Run%s.root"%run,"recreate")
+    f = TFile(os.path.join(folder,"Run{}.root".format(run)),"recreate")
     for item in data['contents']:
         if 'obj' in item.keys() and 'rootobj' in item.keys():
             a = array('B')
@@ -97,7 +97,7 @@ def getRuns(dataset):
 
 def getLastRun(folder="./"):
     maxRun = -1
-    for f in glob.glob(folder+"Run*.root"):
+    for f in glob.glob(os.path.join(folder,"Run*.root")):
         m = re.match(".*Run(\d+).root", f)
         if m:
             run = int(m.group(1))
