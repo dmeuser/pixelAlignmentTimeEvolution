@@ -37,7 +37,6 @@ def getProxyName():
         if m:
             return m.group(1)
 
-getProxyName()
 def x509_params():
     key_file = cert_file = None
 
@@ -115,7 +114,8 @@ def getLastRun(path="./"):
                 maxRun = run
     return maxRun
 
-if __name__ == "__main__":
+
+def downloadViaJson():
     dataset = "/StreamExpress/Run2016C-PromptCalibProdSiPixelAli-Express-v2/ALCAPROMPT"
     path = "/AlCaReco/SiPixelAli"
 
@@ -130,3 +130,6 @@ if __name__ == "__main__":
         data = dqm_get_json(serverurl, str(run), dataset, path)
         saveAsFile(data, run, outputFolder)
 
+
+if __name__ == "__main__":
+    downloadViaJson()
