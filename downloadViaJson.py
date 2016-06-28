@@ -67,17 +67,17 @@ def x509_params():
 
     return key_file, cert_file
 
-def dqm_get_json(server, run, dataset, folder):
+def dqm_get_json(server, run, dataset, path):
     X509CertAuth.ssl_key_file, X509CertAuth.ssl_cert_file = x509_params()
     datareq = urllib2.Request('%s/data/json/archive/%s/%s/%s?rootcontent=1'
-                % (server, run, dataset, folder))
+                % (server, run, dataset, path))
     datareq.add_header('User-agent', ident)
     # return json.load(urllib2.build_opener(X509CertOpen()).open(datareq))
     return eval(urllib2.build_opener(X509CertOpen()).open(datareq).read(),
             { "__builtins__": None }, {})
 
-def saveAsFile(data, run, folder="./"):
-    f = TFile(os.path.join(folder,"Run{}.root".format(run)),"recreate")
+def saveAsFile(data, run, path="./"):
+    f = TFile(os.path.join(path,"Run{}.root".format(run)),"recreate")
     for item in data['contents']:
         if 'obj' in item.keys() and 'rootobj' in item.keys():
             a = array('B')
@@ -95,9 +95,9 @@ def getRuns(dataset):
     out = subprocess.check_output(["das_client --limit 0 --query='run dataset=/StreamExpress/Run2016B-PromptCalibProdSiPixelAli-Express-v2/ALCAPROMPT | sort run.run_number'"], shell=True)
     return [int(r) for r in out.split("\n") if r]
 
-def getLastRun(folder="./"):
+def getLastRun(path="./"):
     maxRun = -1
-    for f in glob.glob(os.path.join(folder,"Run*.root")):
+    for f in glob.glob(os.path.join(path,"Run*.root")):
         m = re.match(".*Run(\d+).root", f)
         if m:
             run = int(m.group(1))
@@ -107,7 +107,7 @@ def getLastRun(folder="./"):
 
 if __name__ == "__main__":
     dataset = "StreamExpress/Run2016B-PromptCalibProdSiPixelAli-Express-v2/ALCAPROMPT"
-    folder = "/AlCaReco/SiPixelAli"
+    path = "/AlCaReco/SiPixelAli"
 
     outputFolder = "root-files"
 
@@ -117,6 +117,6 @@ if __name__ == "__main__":
 
     for run in runs:
         print "Get run", run
-        data = dqm_get_json(serverurl, str(run), dataset, folder)
+        data = dqm_get_json(serverurl, str(run), dataset, path)
         saveAsFile(data, run, outputFolder)
 
