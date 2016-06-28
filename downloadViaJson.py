@@ -69,7 +69,7 @@ def x509_params():
 
 def dqm_get_json(server, run, dataset, path):
     X509CertAuth.ssl_key_file, X509CertAuth.ssl_cert_file = x509_params()
-    datareq = urllib2.Request('%s/data/json/archive/%s/%s/%s?rootcontent=1'
+    datareq = urllib2.Request('%s/data/json/archive/%s%s/%s?rootcontent=1'
                 % (server, run, dataset, path))
     datareq.add_header('User-agent', ident)
     # return json.load(urllib2.build_opener(X509CertOpen()).open(datareq))
@@ -92,8 +92,8 @@ def saveAsFile(data, run, path="./"):
 
 def getRuns(dataset):
     import subprocess
-    out = subprocess.check_output(["das_client --limit 0 --query='run dataset=/StreamExpress/Run2016B-PromptCalibProdSiPixelAli-Express-v2/ALCAPROMPT | sort run.run_number'"], shell=True)
-    return [int(r) for r in out.split("\n") if r]
+    out = subprocess.check_output(["das_client --limit 0 --query='run dataset={}'".format(dataset)], shell=True)
+    return sorted([int(r) for r in out.split("\n") if r])
 
 def getLastRun(path="./"):
     maxRun = -1
@@ -106,7 +106,7 @@ def getLastRun(path="./"):
     return maxRun
 
 if __name__ == "__main__":
-    dataset = "StreamExpress/Run2016B-PromptCalibProdSiPixelAli-Express-v2/ALCAPROMPT"
+    dataset = "/StreamExpress/Run2016C-PromptCalibProdSiPixelAli-Express-v2/ALCAPROMPT"
     path = "/AlCaReco/SiPixelAli"
 
     outputFolder = "root-files"
