@@ -8,6 +8,7 @@ import httplib
 import json
 import glob
 import re
+import subprocess
 
 from ROOT import *
 from array import *
@@ -30,10 +31,20 @@ class X509CertOpen(urllib2.AbstractHTTPHandler):
     def default_open(self, req):
         return self.do_open(X509CertAuth, req)
 
+def getProxyName():
+    for line in subprocess.check_output(["voms-proxy-info"]).split("\n"):
+        m = re.match(".*path.*: (.*)", line)
+        if m:
+            return m.group(1)
+
+getProxyName()
 def x509_params():
     key_file = cert_file = None
 
     x509_path = os.getenv("X509_USER_PROXY", None)
+    if not x509_path:
+        x509_path = getProxyName()
+        os.environ["X509_USER_PROXY"] = x509_path
     if x509_path and os.path.exists(x509_path):
         key_file = cert_file = x509_path
 
@@ -91,7 +102,6 @@ def saveAsFile(data, run, path="./"):
     f.Close()
 
 def getRuns(dataset):
-    import subprocess
     out = subprocess.check_output(["das_client --limit 0 --query='run dataset={}'".format(dataset)], shell=True)
     return sorted([int(r) for r in out.split("\n") if r])
 
