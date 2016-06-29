@@ -13,6 +13,7 @@ import subprocess
 import math
 
 import ROOT
+import downloadViaJson
 
 def style():
     ROOT.gStyle.SetOptStat(0)
@@ -120,6 +121,7 @@ def getInputHists(searchPath="root-files/Run*.root"):
     return sortedDict(hists)
 
 def drawHistsVsRun(hmap, savename):
+    if not hmap: return
     line = ROOT.TLine()
     line.SetLineColor(ROOT.kRed)
     c = ROOT.TCanvas(randomName(),"",1200,600)
@@ -227,6 +229,7 @@ def main():
 
 
 def copyToWeb():
+    todayStr = datetime.date.today().isoformat()
     updateFile(
         "/afs/cern.ch/user/k/kiesel/www/indexTemplate.html",
         "/afs/cern.ch/user/k/kiesel/www/index.html",
@@ -249,7 +252,8 @@ def copyToWeb():
         ]
     )
 
-style()
-todayStr = datetime.date.today().isoformat()
-main()
-copyToWeb()
+if __name__ == "__main__":
+    downloadViaJson.downloadViaJson()
+    style()
+    main()
+    copyToWeb()
