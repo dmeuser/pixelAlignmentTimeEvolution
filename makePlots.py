@@ -160,8 +160,10 @@ def getHistsVsRun(inputHists, minRun=-1):
     return histsVsRun
 
 def diffHistsVsRun(inputHists, inputHists2, minRun=-1):
-    inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
-    inputHists2 = sortedDict(dict((key,value) for key, value in inputHists2.iteritems() if key >= minRun))
+    inputHists = sortedDict(dict((key,(value,None)) for key, value in inputHists.iteritems() if key >= minRun))
+    for key, value in inputHists2.iteritems():
+        if key not in inputHists: inputHists[key] = (None,value)
+        else: inputHists[key][1] = value
 
     hdefault = ROOT.TH1F("", ";;#Delta blub", len(inputHists), 0, len(inputHists))
     hdefault.SetLabelSize(.04)
@@ -169,20 +171,30 @@ def diffHistsVsRun(inputHists, inputHists2, minRun=-1):
         if len(inputHists) < 20 or not bin%int(len(inputHists)/20) or bin+1==len(inputHists):
             hdefault.GetXaxis().SetBinLabel(bin+1, str(runNr))
     histsVsRun = {}
-    allRuns = sorted(list(set(inputHists.keys()) | set(inputHists2.keys())))
-    for iRun, runNr in enumerate(allRuns):
-        if runNr in inputHists:
-            if runNr in inputHists2:
-                for hname, h in inputHists[runNr].iteritems():
-                    h2 = inputHists2[runNr][hname]
-                    if hname not in histsVsRun: histsVsRun[hname] = [ hdefault.Clone() for i in range(6) ]
-                    for bin in range(1,7):
-                        c = h.GetBinContent(bin)
-                        e = h.GetBinError(bin)
-                        c2 = h2.GetBinContent(bin)
-                        e2 = h2.GetBinError(bin)
-                        histsVsRun[hname][bin-1].SetBinContent(iRun+1, c-c2)
-                        histsVsRun[hname][bin-1].SetBinError(iRun+1, math.sqrt(e**2+e2**2))
+    for iRun, runNr, (hmap1, hmap2)  in enumerate(inputHists.iteritems()):
+        if hmap1 and hmap2:
+            for hname, h in hmap1.iteritems():
+                h2 = hmap2[hname]
+                if hname not in histsVsRun: histsVsRun[hname] = [ hdefault.Clone() for i in range(6) ]
+                for bin in range(6):
+                    c = h.GetBinContent(bin+1)
+                    e = h.GetBinError(bin+1)
+                    c2 = h2.GetBinContent(bin+1)
+                    e2 = h2.GetBinError(bin+1)
+                    histsVsRun[hname][bin].SetBinContent(iRun+1, c-c2)
+                    histsVsRun[hname][bin].SetBinError(iRun+1, math.sqrt(e**2+e2**2))
+        if hmap1 and not hmap2:
+            for hname, h in hmap1.iteritems():
+                if hname not in histsVsRun: histsVsRun[hname] = [ hdefault.Clone() for i in range(6) ]
+                for bin in range(6):
+                    histsVsRun[hname][bin].SetBinContent(iRun+1, 0)
+                    histsVsRun[hname][bin].SetBinError(iRun+1, 50)
+        if not hmap1 and hmap2:
+            for hname, h in hmap2.iteritems():
+                if hname not in histsVsRun: histsVsRun[hname] = [ hdefault.Clone() for i in range(6) ]
+                for bin in range(6):
+                    histsVsRun[hname][bin].SetBinContent(iRun+1, 0)
+                    histsVsRun[hname][bin].SetBinError(iRun+1, 50)
     return histsVsRun
 
 def updateFile(source, dest, changes={}):
@@ -210,7 +222,6 @@ def main():
     drawHistsVsRun(getHistsVsRun(inputHistsPseudo), "pixAlignment_pseudo_all_{}".format(todayStr))
     drawHistsVsRun(getHistsVsRun(inputHistsPseudo, firstNewRun), "pixAlignment_pseudo_newest_{}".format(todayStr))
     drawHistsVsRun(diffHistsVsRun(inputHists, inputHistsPseudo), "pixAlignment_diff_all_{}".format(todayStr))
-
     drawHistsVsRun(diffHistsVsRun(inputHists, inputHistsPseudo, firstNewRun), "pixAlignment_diff_newest_{}".format(todayStr))
 
 
