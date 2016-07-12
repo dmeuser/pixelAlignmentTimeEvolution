@@ -171,7 +171,7 @@ def drawHists(hmap, savename):
         line.DrawLine(0,-cut,6,-cut)
         line.DrawLine(0,+cut,6,+cut)
     c.cd(0)
-    save(savename, plotDir)
+    save(savename, plotDir, [".pdf",".root"])
 
 def drawHistsVsRun(hmap, savename):
     if not hmap: return
@@ -190,11 +190,11 @@ def drawHistsVsRun(hmap, savename):
         line.DrawLine(h.GetXaxis().GetXmin(),-p.cut,h.GetXaxis().GetXmax(),-p.cut)
         line.DrawLine(h.GetXaxis().GetXmin(),+p.cut,h.GetXaxis().GetXmax(),+p.cut)
     c.cd(0)
-    text = ROOT.TLatex(.47,.96, " ".join( ["#color[{}]{{{}}}".format(objects[i][1],objects[i][0]) for i in range(6)] ) )
+    text = ROOT.TLatex(.4,.97, " ".join( ["#color[{}]{{{}}}".format(objects[i][1],objects[i][0]) for i in range(6)] ) )
     text.Draw()
-    textCMS = ROOT.TLatex(.05,.96, "#font[61]{CMS} #scale[0.76]{#font[52]{Private Work}}")
+    textCMS = ROOT.TLatex(.06,.97, "#font[61]{CMS} #scale[0.76]{#font[52]{Private Work}}")
     textCMS.Draw()
-    save(savename, plotDir, endings=[".pdf",".png"])
+    save(savename, plotDir, endings=[".pdf",".png", ".root"])
 
 def getHistsVsRun(inputHists, minRun=-1):
     inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
@@ -217,6 +217,7 @@ def getHistsVsRun(inputHists, minRun=-1):
 def diffHistsVsRun(inputHists, inputHists2, minRun=-1):
     inputHists = sortedDict(dict((key,(value,None)) for key, value in inputHists.iteritems() if key >= minRun))
     for key, value in inputHists2.iteritems():
+        if key < minRun: continue
         if key not in inputHists: inputHists[key] = (None, value)
         else: inputHists[key] = (inputHists[key][0], value)
     inputHists = sortedDict(inputHists)
@@ -282,6 +283,7 @@ def getNthLastRun(inputHists, N):
     return sortedRuns[-min(N, len(sortedRuns))]
 
 def getTableString(runs):
+    runs = sorted(runs, reverse=True)
     return "\n".join(["<tr> <td>{0}</td> <td><a href=plots/Run{0}.pdf>pdf</a></td> <td><a href=plots/Run{0}_pseudo.pdf>pdf</a></td> </tr>".format(r) for r in runs])
 
 def main():
@@ -300,7 +302,6 @@ def main():
     drawHistsVsRun(getHistsVsRun(inputHistsPseudo, firstNewRunPseudo), "pixAlignment_pseudo_newest_{}".format(todayStr))
     drawHistsVsRun(diffHistsVsRun(inputHists, inputHistsPseudo), "pixAlignment_diff_all_{}".format(todayStr))
     drawHistsVsRun(diffHistsVsRun(inputHists, inputHistsPseudo, firstNewRunBoth), "pixAlignment_diff_newest_{}".format(todayStr))
-
     for run, hmap in inputHists.iteritems():
         drawHists(hmap, "Run{}".format(run))
     for run, hmap in inputHistsPseudo.iteritems():
@@ -313,5 +314,5 @@ def main():
 
 
 if __name__ == "__main__":
-    #downloadViaJson.downloadViaJson()
+    downloadViaJson.downloadViaJson()
     main()
