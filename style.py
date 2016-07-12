@@ -23,7 +23,7 @@ def defaultStyle():
     st.SetTitleBorderSize( 0 )
 
     st.SetTitleOffset( 1.1, "x" )
-    st.SetTitleOffset( 1.6, "y" )
+    st.SetTitleOffset( 1.1, "y" )
 
     st.SetStatBorderSize(1)
     st.SetStatColor(0)
@@ -35,7 +35,7 @@ def defaultStyle():
 
     st.SetOptStat(0)
 
-    textSize = 0.05
+    textSize = 0.045
     st.SetLabelSize( textSize, "xyz" )
     st.SetTitleSize( textSize, "xyz" )
 
