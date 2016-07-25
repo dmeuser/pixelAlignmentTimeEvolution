@@ -173,10 +173,13 @@ def drawHists(hmap, savename):
     c.cd(0)
     save(savename, plotDir, [".pdf",".root"])
 
-def drawHistsVsRun(hmap, savename):
+def drawHistsVsRun(hmap, savename, specialRuns=[]):
     if not hmap: return
     line = ROOT.TLine()
     line.SetLineColor(ROOT.kRed)
+    updateLine = ROOT.TLine()
+    updateLine.SetLineStyle(2)
+    updateLine.SetLineColor(ROOT.kGray)
     c = ROOT.TCanvas(randomName(),"",1200,600)
     c.Divide(3,2)
     for ip, p in enumerate(parameters):
@@ -189,6 +192,9 @@ def drawHistsVsRun(hmap, savename):
             h.Draw( "e same" if ih>0 else "e")
         line.DrawLine(h.GetXaxis().GetXmin(),-p.cut,h.GetXaxis().GetXmax(),-p.cut)
         line.DrawLine(h.GetXaxis().GetXmin(),+p.cut,h.GetXaxis().GetXmax(),+p.cut)
+        for r in specialRuns:
+            rbin = h.GetXaxis().FindBin(str(r))
+            updateLine.DrawLine(rbin, p.minDraw, rbin, p.maxDraw)
     c.cd(0)
     text = ROOT.TLatex(.4,.97, " ".join( ["#color[{}]{{{}}}".format(objects[i][1],objects[i][0]) for i in range(6)] ) )
     text.Draw()
@@ -310,6 +316,10 @@ def main():
     updateFile("indexTemplate.html", "/afs/cern.ch/user/k/kiesel/www/index.html",
         {"date": todayStr,
         "table": getTableString(list(set(inputHists.keys())|set(inputHistsPseudo.keys())))})
+
+def getUpdateRuns(tag):
+    out = subprocess.check_output(["conddb", "list", tag])
+    return [int(x.split()[0]) for x in out.split("\n")[2:] if x]
 
 
 
