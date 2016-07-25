@@ -16,6 +16,7 @@ from array import *
 serverurl = 'https://cmsweb.cern.ch/dqm/offline'
 ident = "DQMToJson/1.0 python/%d.%d.%d" % sys.version_info[:3]
 HTTPS = httplib.HTTPSConnection
+proxyName = "/afs/cern.ch/user/k/kiesel/.proxyCertificate"
 
 class X509CertAuth(HTTPS):
     ssl_key_file = None
@@ -31,18 +32,12 @@ class X509CertOpen(urllib2.AbstractHTTPHandler):
     def default_open(self, req):
         return self.do_open(X509CertAuth, req)
 
-def getProxyName():
-    for line in subprocess.check_output(["voms-proxy-info"]).split("\n"):
-        m = re.match(".*path.*: (.*)", line)
-        if m:
-            return m.group(1)
-
 def x509_params():
     key_file = cert_file = None
 
     x509_path = os.getenv("X509_USER_PROXY", None)
     if not x509_path:
-        x509_path = getProxyName()
+        x509_path = proxyName
         os.environ["X509_USER_PROXY"] = x509_path
     if x509_path and os.path.exists(x509_path):
         key_file = cert_file = x509_path
@@ -130,6 +125,10 @@ def downloadViaJson():
         data = dqm_get_json(serverurl, str(run), dataset, path)
         saveAsFile(data, run, outputFolder)
 
+def getGridCertificat():
+    # Reads in PW from text file ~/.globus/pw, which you have to create yourself
+    out = subprocess.check_output(["cat ~/.globus/pw | voms-proxy-init --voms cms --valid 999:00 --pwstdin --out {}".format(proxyName)], shell=True)
 
 if __name__ == "__main__":
+    getGridCertificat()
     downloadViaJson()
