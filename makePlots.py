@@ -10,6 +10,7 @@ import datetime
 import string
 import shutil
 import subprocess
+import pickle
 import math
 
 import ROOT
@@ -29,9 +30,9 @@ class Parameter:
         self.minDraw = minDraw
         self.maxDraw = maxDraw
 parameters = [
-    Parameter("Xpos", "#Deltax (#mum)", 5, -30, 10 ), \
-    Parameter("Ypos", "#Deltay (#mum)", 10, -30, 11 ), \
-    Parameter("Zpos", "#Deltaz (#mum)", 15, -100, 16 ), \
+    Parameter("Xpos", "#Deltax (#mum)", 5, -30, 30 ), \
+    Parameter("Ypos", "#Deltay (#mum)", 10, -30, 30 ), \
+    Parameter("Zpos", "#Deltaz (#mum)", 15, -30, 30 ), \
     Parameter("Xrot", "#Delta#theta_{x} (#murad)", 30, -50, 50 ), \
     Parameter("Yrot", "#Delta#theta_{y} (#murad)", 30, -50, 50 ), \
     Parameter("Zrot", "#Delta#theta_{z} (#murad)", 30, -70, 70 )
@@ -143,6 +144,23 @@ def align(hmap, hmapAlignSettings):
             hmapNew[name].SetBinContent(bin,h.GetBinContent(bin)-hSet.GetBinContent(bin))
     return hmapNew
 
+def getRunStartTime(run):
+    #returs a string similar to 2016-06-16 23:30:32
+    return subprocess.check_output(["das_client.py --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
+
+def getTime(run, dbName="runTime.pkl"):
+    db = {}
+    if os.path.exists(dbName):
+        with open(dbName) as f:
+            db = pickle.load(f)
+    if run not in db:
+        db[run] = getRunStartTime(run)
+        if db[run] == "[]\n": db[run] = getRunStartTime(run-1)
+        print "Get Time for run {}: {}".format(run, db[run])
+    with open(dbName, "wb") as f:
+        pickle.dump(db, f)
+    return db[run]
+
 def drawHists(hmap, savename):
     hnames = ["Xpos", "Ypos","Zpos", "Xrot", "Yrot", "Zrot"]
     line = ROOT.TLine()
@@ -202,12 +220,97 @@ def drawHistsVsRun(hmap, savename, specialRuns=[]):
     textCMS.Draw()
     save(savename, plotDir, endings=[".pdf",".png", ".root"])
 
+def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
+    """ Options for xaxis: time, run"""
+    if not gmap: return
+    line = ROOT.TLine()
+    line.SetLineColor(ROOT.kGray)
+    updateLine = ROOT.TLine()
+    updateLine.SetLineStyle(2)
+    updateLine.SetLineColor(ROOT.kGray)
+    leg = ROOT.TLegend(.2, .65, .55, .9)
+    leg.SetNColumns(2)
+    leg.AddEntry(line, "Limit", "l")
+    leg.AddEntry(updateLine, "New alignment", "l")
+    for ip, p in enumerate(parameters):
+        c = ROOT.TCanvas(randomName(),"",1200,600)
+        for ig,g in enumerate(gmap[p.name]):
+            if xaxis == "time":
+                g.SetTitle(";Time;{}".format(p.label))
+                g.GetXaxis().SetTimeDisplay(1)
+                g.GetXaxis().SetTimeFormat("%Y-%m-%d")
+                g.GetXaxis().SetNdivisions(6,0,0)
+            elif xaxis == "run":
+                g.SetTitle(";Run;{}".format(p.label))
+                g.GetXaxis().SetNoExponent()
+                g.GetXaxis().SetNdivisions(7,0,0)
+            else:
+                print "No idea what to do with x-axis", xaxis
+            g.GetYaxis().SetRangeUser(p.minDraw, p.maxDraw)
+            g.SetMarkerColor(objects[ig][1])
+            g.SetLineColor(objects[ig][1])
+            g.Draw( "same p" if ig>0 else "ap")
+            leg.AddEntry(g, objects[ig][0], "l")
+            if not ig:
+                xax = g.GetXaxis()
+                xmin, xmax = xax.GetXmin(), xax.GetXmax()
+        line.DrawLine(xmin, -p.cut, xmax, -p.cut)
+        line.DrawLine(xmin, +p.cut, xmax, +p.cut)
+        for r in specialRuns:
+            updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
+        text = ROOT.TLatex()
+        text.DrawLatexNDC(.08, .945, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
+        text.DrawLatexNDC(.82, .945, "x fb^{-1} (13TeV)")
+        if ip == 0: leg.Draw()
+        save(savename+"_"+p.name, plotDir, endings=[".pdf",".png"])
+
+
+def getGraphsVsRun(inputHists, minRun=-1):
+    inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
+    gdefault = ROOT.TGraphErrors()
+    graphsVsRun = {}
+    for iRun, (runNr, hmap) in enumerate(inputHists.iteritems()):
+        for hname, h in hmap.iteritems():
+            if hname not in graphsVsRun: graphsVsRun[hname] = [ gdefault.Clone() for i in range(6) ]
+            for bin in range(1,7):
+                c = h.GetBinContent(bin)
+                e = h.GetBinError(bin)
+                if abs(c) < 1e-15: continue
+                if abs(e) > 5: continue
+                n = graphsVsRun[hname][0].GetN()
+                graphsVsRun[hname][bin-1].SetPoint(n, runNr, c)
+                graphsVsRun[hname][bin-1].SetPointError(n, 0, e)
+    return graphsVsRun
+
+def string2Time(timeStr):
+    return ROOT.TDatime(timeStr).Convert(0)
+
+def getGraphsVsTime(inputHists, minRun=-1):
+    inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
+    gdefault = ROOT.TGraphErrors()
+    graphsVsRun = {}
+    for iRun, (runNr, hmap) in enumerate(inputHists.iteritems()):
+        time = string2Time(getTime(runNr))
+        for hname, h in hmap.iteritems():
+            if hname not in graphsVsRun: graphsVsRun[hname] = [ gdefault.Clone() for i in range(6) ]
+            for bin in range(1,7):
+                c = h.GetBinContent(bin)
+                e = h.GetBinError(bin)
+                if abs(c) < 1e-15: continue
+                if abs(e) > 5: continue
+                n = graphsVsRun[hname][0].GetN()
+                graphsVsRun[hname][bin-1].SetPoint(n, time, c)
+                graphsVsRun[hname][bin-1].SetPointError(n, 0, e)
+    return graphsVsRun
+
+
+
 def getHistsVsRun(inputHists, minRun=-1):
     inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
     hdefault = ROOT.TH1F("", ";;#Delta blub", len(inputHists), 0, len(inputHists))
     hdefault.SetLabelSize(.04)
     for bin, runNr in enumerate(inputHists.keys()):
-        if len(inputHists) < 20 or not bin%int(len(inputHists)/20) or bin+1==len(inputHists):
+        if len(inputHists) < 20 or not bin%int(len(inputHists)/20) or bin+1==len(inputHists) or True:
             hdefault.GetXaxis().SetBinLabel(bin+1, str(runNr))
     histsVsRun = {}
     for iRun, (runNr, hmap) in enumerate(inputHists.iteritems()):
@@ -322,7 +425,22 @@ def getUpdateRuns(tag):
     return [int(x.split()[0]) for x in out.split("\n")[2:] if x]
 
 
+def manual():
+    inputHists = getInputHists("/afs/cern.ch/user/k/kiesel/public/manualPCLforReReco/Results*/Run*.root")
+    updateRuns = [ x for x in getUpdateRuns("TrackerAlignment_v17_offline") if x>271952]
+    drawHistsVsRun(getHistsVsRun(inputHists), "pixAlignment_for_rereco", updateRuns)
 
 if __name__ == "__main__":
-    downloadViaJson.downloadViaJson()
+    #downloadViaJson.getGridCertificat()
+    #downloadViaJson.downloadViaJson()
     main()
+    #manual()
+    updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
+    updateTimes = [string2Time(getTime(x)) for x in updateRuns]
+    inputHists = getInputHists()
+    graphsVsTime = getGraphsVsTime(inputHists)
+    drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes)
+    graphsVsRun = getGraphsVsRun(inputHists)
+    drawGraphsVsX(graphsVsRun, "run", "vsRun", updateRuns)
+
+
