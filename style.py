@@ -14,16 +14,16 @@ def defaultStyle():
     st.SetPadColor( ROOT.kWhite )
 
     # Margins:
-    st.SetPadTopMargin(0.06)
+    st.SetPadTopMargin(0.07)
     st.SetPadBottomMargin(0.12)
-    st.SetPadLeftMargin(0.16)
-    st.SetPadRightMargin(0.04)
+    st.SetPadLeftMargin(0.08)
+    st.SetPadRightMargin(0.03)
 
     st.SetTitleFillColor( ROOT.kWhite )
     st.SetTitleBorderSize( 0 )
 
-    st.SetTitleOffset( 1.1, "x" )
-    st.SetTitleOffset( 1.1, "y" )
+    st.SetTitleOffset( 1.0, "x" )
+    st.SetTitleOffset( 0.7, "y" )
 
     st.SetStatBorderSize(1)
     st.SetStatColor(0)
@@ -35,7 +35,7 @@ def defaultStyle():
 
     st.SetOptStat(0)
 
-    textSize = 0.045
+    textSize = 0.055
     st.SetLabelSize( textSize, "xyz" )
     st.SetTitleSize( textSize, "xyz" )
 
