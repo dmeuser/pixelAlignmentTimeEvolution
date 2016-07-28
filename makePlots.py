@@ -279,45 +279,25 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
         save(savename+"_"+p.name, plotDir, endings=[".pdf",".png"])
 
 
-def getGraphsVsRun(inputHists, minRun=-1):
-    inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
-    gdefault = ROOT.TGraphErrors()
-    graphsVsRun = {}
-    for iRun, (runNr, hmap) in enumerate(inputHists.iteritems()):
-        for hname, h in hmap.iteritems():
-            if hname not in graphsVsRun: graphsVsRun[hname] = [ gdefault.Clone() for i in range(6) ]
-            for bin in range(1,7):
-                c = h.GetBinContent(bin)
-                e = h.GetBinError(bin)
-                if abs(c) < 1e-15: continue
-                if abs(e) > 5: continue
-                n = graphsVsRun[hname][0].GetN()
-                graphsVsRun[hname][bin-1].SetPoint(n, runNr, c)
-                graphsVsRun[hname][bin-1].SetPointError(n, 0, e)
-    return graphsVsRun
-
 def string2Time(timeStr):
     return ROOT.TDatime(timeStr).Convert(0)
 
-def getGraphsVsTime(inputHists, minRun=-1):
+def getGraphsVsRun(inputHists, minRun=-1, convertToTime=False):
     inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
     gdefault = ROOT.TGraphErrors()
     graphsVsRun = {}
     for iRun, (runNr, hmap) in enumerate(inputHists.iteritems()):
-        time = string2Time(getTime(runNr))
+        xVar = string2Time(getTime(runNr)) if convertToTime else runNr
         for hname, h in hmap.iteritems():
             if hname not in graphsVsRun: graphsVsRun[hname] = [ gdefault.Clone() for i in range(6) ]
             for bin in range(1,7):
                 c = h.GetBinContent(bin)
                 e = h.GetBinError(bin)
-                if abs(c) < 1e-15: continue
-                if abs(e) > 5: continue
+                #if abs(c) < 1e-15 or abs(e) > 5: continue
                 n = graphsVsRun[hname][0].GetN()
-                graphsVsRun[hname][bin-1].SetPoint(n, time, c)
+                graphsVsRun[hname][bin-1].SetPoint(n, xVar, c)
                 graphsVsRun[hname][bin-1].SetPointError(n, 0, e)
     return graphsVsRun
-
-
 
 def getHistsVsRun(inputHists, minRun=-1):
     inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
@@ -452,7 +432,7 @@ if __name__ == "__main__":
     updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
     updateTimes = [string2Time(getTime(x)) for x in updateRuns]
     inputHists = getInputHists()
-    graphsVsTime = getGraphsVsTime(inputHists)
+    graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
     drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes)
     graphsVsRun = getGraphsVsRun(inputHists)
     drawGraphsVsX(graphsVsRun, "run", "vsRun", updateRuns)
