@@ -251,6 +251,7 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
             if xaxis == "time":
                 g.SetTitle(";Time;{}".format(p.label))
                 g.GetXaxis().SetTimeDisplay(1)
+                g.GetXaxis().SetTimeOffset(25)
                 g.GetXaxis().SetTimeFormat("%Y-%m-%d")
                 g.GetXaxis().SetNdivisions(6,0,0)
             elif xaxis == "run":
@@ -446,7 +447,7 @@ def manual():
 if __name__ == "__main__":
     #downloadViaJson.getGridCertificat()
     #downloadViaJson.downloadViaJson()
-    main()
+    #main()
     #manual()
     updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
     updateTimes = [string2Time(getTime(x)) for x in updateRuns]
