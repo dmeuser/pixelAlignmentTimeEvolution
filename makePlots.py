@@ -148,6 +148,18 @@ def getRunStartTime(run):
     #returs a string similar to 2016-06-16 23:30:32
     return subprocess.check_output(["das_client.py --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
 
+def getLuminosity(minRun):
+    """Expects something like
+    +-------+------+--------+--------+-------------------+------------------+
+    | nfill | nrun | nls    | ncms   | totdelivered(/fb) | totrecorded(/fb) |
+    +-------+------+--------+--------+-------------------+------------------+
+    | 73    | 327  | 142418 | 138935 | 19.562            | 18.036           |
+    +-------+------+--------+--------+-------------------+------------------+
+    And extracts the total recorded luminosity (/fb).
+    """
+    output = subprocess.check_output(["brilcalc", "lumi", "-b", "STABLE BEAMS", "--normtag=/afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_BRIL.json", "-u", "/fb", "--begin", str(minRun)])
+    return float(output.split("\n")[-3].split("|")[-2])
+
 def getTime(run, dbName="runTime.pkl"):
     db = {}
     if os.path.exists(dbName):
@@ -222,6 +234,7 @@ def drawHistsVsRun(hmap, savename, specialRuns=[]):
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
     """ Options for xaxis: time, run"""
+    lumi = getLuminosity(273000)
     if not gmap: return
     line = ROOT.TLine()
     line.SetLineColor(ROOT.kGray)
@@ -260,7 +273,7 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
             updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
         text = ROOT.TLatex()
         text.DrawLatexNDC(.08, .945, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
-        text.DrawLatexNDC(.82, .945, "x fb^{-1} (13TeV)")
+        text.DrawLatexNDC(.79, .945, "{:.1f} fb^{{-1}} (13TeV)".format(lumi))
         if ip == 0: leg.Draw()
         save(savename+"_"+p.name, plotDir, endings=[".pdf",".png"])
 
