@@ -425,9 +425,9 @@ def manual():
     drawHistsVsRun(getHistsVsRun(inputHists), "pixAlignment_for_rereco", updateRuns)
 
 if __name__ == "__main__":
-    #downloadViaJson.getGridCertificat()
-    #downloadViaJson.downloadViaJson()
-    #main()
+    downloadViaJson.getGridCertificat()
+    downloadViaJson.downloadViaJson()
+    main()
     #manual()
     updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
     updateTimes = [string2Time(getTime(x)) for x in updateRuns]
