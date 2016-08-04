@@ -49,8 +49,6 @@ objects = [
 
 plotDir = "/afs/cern.ch/user/k/kiesel/www/plots"
 
-
-
 def save(name, folder="plots", endings=[".pdf"]):
     for ending in endings:
         ROOT.gPad.GetCanvas().SaveAs(os.path.join(folder,name+ending))
@@ -131,20 +129,7 @@ def exceedsCuts(h, cutDict=False):
     else:
         return "good"
 
-def checkNewAlignment(hmap, cutDict):
-    infos = [ exceedsCuts(x, cutDict) for x in hmap.values() ]
-    return "fail" not in infos and "update" in infos
-
-def align(hmap, hmapAlignSettings):
-    hmapNew = {}
-    for name, h in hmap.iteritems():
-        hSet = hmapAlignSettings[name]
-        hmapNew[name] = h.Clone(h.GetName()+"_"+randomName())
-        for bin in range(1,7):
-            hmapNew[name].SetBinContent(bin,h.GetBinContent(bin)-hSet.GetBinContent(bin))
-    return hmapNew
-
-def getRunStartTime(run):
+def getRunEndTime(run):
     #returs a string similar to 2016-06-16 23:30:32
     return subprocess.check_output(["das_client.py --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
 
@@ -166,8 +151,8 @@ def getTime(run, dbName="runTime.pkl"):
         with open(dbName) as f:
             db = pickle.load(f)
     if run not in db:
-        db[run] = getRunStartTime(run)
-        if db[run] == "[]\n": db[run] = getRunStartTime(run-1)
+        db[run] = getRunEndTime(run)
+        if db[run] == "[]\n": db[run] = getRunEndTime(run-1) # usually, the run before was a valid run
         print "Get Time for run {}: {}".format(run, db[run])
     with open(dbName, "wb") as f:
         pickle.dump(db, f)
@@ -201,36 +186,7 @@ def drawHists(hmap, savename):
         line.DrawLine(0,-cut,6,-cut)
         line.DrawLine(0,+cut,6,+cut)
     c.cd(0)
-    save(savename, plotDir, [".pdf",".root"])
-
-def drawHistsVsRun(hmap, savename, specialRuns=[]):
-    if not hmap: return
-    line = ROOT.TLine()
-    line.SetLineColor(ROOT.kRed)
-    updateLine = ROOT.TLine()
-    updateLine.SetLineStyle(2)
-    updateLine.SetLineColor(ROOT.kGray)
-    c = ROOT.TCanvas(randomName(),"",1200,600)
-    c.Divide(3,2)
-    for ip, p in enumerate(parameters):
-        c.cd(ip+1)
-        for ih,h in enumerate(hmap[p.name]):
-            h.SetYTitle(p.label)
-            h.GetYaxis().SetRangeUser(p.minDraw, p.maxDraw)
-            h.SetMarkerColor(objects[ih][1])
-            h.SetLineColor(objects[ih][1])
-            h.Draw( "e same" if ih>0 else "e")
-        line.DrawLine(h.GetXaxis().GetXmin(),-p.cut,h.GetXaxis().GetXmax(),-p.cut)
-        line.DrawLine(h.GetXaxis().GetXmin(),+p.cut,h.GetXaxis().GetXmax(),+p.cut)
-        for r in specialRuns:
-            rbin = h.GetXaxis().FindBin(str(r))
-            updateLine.DrawLine(rbin, p.minDraw, rbin, p.maxDraw)
-    c.cd(0)
-    text = ROOT.TLatex(.4,.97, " ".join( ["#color[{}]{{{}}}".format(objects[i][1],objects[i][0]) for i in range(6)] ) )
-    text.Draw()
-    textCMS = ROOT.TLatex(.06,.97, "#font[61]{CMS} #scale[0.76]{#font[52]{Private Work}}")
-    textCMS.Draw()
-    save(savename, plotDir, endings=[".pdf",".png", ".root"])
+    save(savename, plotDir, [".pdf",".png"])
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
     """ Options for xaxis: time, run"""
@@ -299,82 +255,6 @@ def getGraphsVsRun(inputHists, minRun=-1, convertToTime=False):
                 graphsVsRun[hname][bin-1].SetPointError(n, 0, e)
     return graphsVsRun
 
-def getHistsVsRun(inputHists, minRun=-1):
-    inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
-    hdefault = ROOT.TH1F("", ";;#Delta blub", len(inputHists), 0, len(inputHists))
-    hdefault.SetLabelSize(.04)
-    for bin, runNr in enumerate(inputHists.keys()):
-        if len(inputHists) < 20 or not bin%int(len(inputHists)/20) or bin+1==len(inputHists) or True:
-            hdefault.GetXaxis().SetBinLabel(bin+1, str(runNr))
-    histsVsRun = {}
-    for iRun, (runNr, hmap) in enumerate(inputHists.iteritems()):
-        for hname, h in hmap.iteritems():
-            if hname not in histsVsRun: histsVsRun[hname] = [ hdefault.Clone() for i in range(6) ]
-            for bin in range(1,7):
-                c = h.GetBinContent(bin)
-                e = h.GetBinError(bin)
-                histsVsRun[hname][bin-1].SetBinContent(iRun+1,c)
-                histsVsRun[hname][bin-1].SetBinError(iRun+1,e)
-    return histsVsRun
-
-def diffHistsVsRun(inputHists, inputHists2, minRun=-1):
-    inputHists = sortedDict(dict((key,(value,None)) for key, value in inputHists.iteritems() if key >= minRun))
-    for key, value in inputHists2.iteritems():
-        if key < minRun: continue
-        if key not in inputHists: inputHists[key] = (None, value)
-        else: inputHists[key] = (inputHists[key][0], value)
-    inputHists = sortedDict(inputHists)
-
-    hdefault = ROOT.TH1F("", ";;#Delta blub", len(inputHists), 0, len(inputHists))
-    hdefault.SetLabelSize(.04)
-    for bin, runNr in enumerate(inputHists.keys()):
-        if len(inputHists) < 20 or not bin%int(len(inputHists)/20) or bin+1==len(inputHists):
-            hdefault.GetXaxis().SetBinLabel(bin+1, str(runNr))
-    histsVsRun = {}
-    for iRun, (runNr, (hmap1, hmap2))  in enumerate(inputHists.iteritems()):
-        if hmap1 and hmap2:
-            for hname, h in hmap1.iteritems():
-                h2 = hmap2[hname]
-                if hname not in histsVsRun: histsVsRun[hname] = [ hdefault.Clone() for i in range(6) ]
-                for bin in range(6):
-                    c = h.GetBinContent(bin+1)
-                    e = h.GetBinError(bin+1)
-                    c2 = h2.GetBinContent(bin+1)
-                    e2 = h2.GetBinError(bin+1)
-                    histsVsRun[hname][bin].SetBinContent(iRun+1, c-c2)
-                    histsVsRun[hname][bin].SetBinError(iRun+1, math.sqrt(e**2+e2**2))
-#        if hmap1 and not hmap2: print "Run {} not in manual workflow".format(runNr)
-#        if not hmap1 and hmap2: print "Run {} not in online workflow".format(runNr)
-    return histsVsRun
-
-def pseudoAlignment(inputHists, app=""):
-    referenceRun = -1
-    for run, hmap in inputHists.iteritems():
-        drawHists(hmap, "pre{}".format(run)+app)
-        if referenceRun > 0:
-            hmap = align(hmap,inputHists[referenceRun])
-        if checkNewAlignment(hmap):
-            print "updated alignment", run
-            referenceRun = run
-        drawHists(hmap, "post{}".format(run)+app)
-
-def cutParameterVariation(parName, cuts):
-    gr = ROOT.TGraph()
-    myCuts = copy.deepcopy(parDict)
-    for i, c in enumerate(cuts):
-        myCuts[parName].cut = c
-        n = len(getHistsVsRun(inputHists, True, myCuts)[1])
-        gr.SetPoint(i,c,n)
-    unit = "#mum" if "pos" in parName else "^{#circ}"
-    gr.SetTitle("{}; limit [{}];number of updates".format(parName,unit))
-    gr.SetMarkerStyle(20)
-    gr.Draw("ap")
-    l = ROOT.TLine()
-    origCut = parDict[parName].cut
-    yAxis = gr.GetHistogram().GetYaxis()
-    l.DrawLine(origCut,yAxis.GetXmin(),origCut,yAxis.GetXmax())
-    save("cutParameterVariation_"+parName)
-
 def updateFile(source, dest, changes={}):
     with open(source) as f:
         x = string.Template(f.read())
@@ -385,56 +265,55 @@ def getNthLastRun(inputHists, N):
     sortedRuns = sorted(inputHists.keys())
     return sortedRuns[-min(N, len(sortedRuns))]
 
-def getTableString(runs):
-    runs = sorted(runs, reverse=True)
-    return "\n".join(["<tr> <td>{0}</td> <td><a href=plots/Run{0}.pdf>pdf</a></td> <td><a href=plots/Run{0}_pseudo.pdf>pdf</a></td> </tr>".format(r) for r in runs])
+def isFilledRun(hmap):
+    globalMax = 0
+    for k, v in hmap.iteritems():
+        for bin in range(1,7):
+            globalMax = max(globalMax, v.GetBinContent(bin))
+    return abs(globalMax) > 1e-6
 
-def main():
-    inputHists = getInputHists()
-    inputHistsPseudo = getInputHists("/afs/cern.ch/user/j/jcastle/public/pp3.8T_PCL_Alignment/Results*/MinBias_2015/PCL_SiPixAl_DQM.root")
-    inputHistsPseudo.update(getInputHists("/afs/cern.ch/user/j/jschulte/public/pp3.8T_PCL_Alignment/Results*/MinBias_2016/PCL_SiPixAl_DQM.root"))
-    inputHistsPseudo.update(getInputHists("/afs/cern.ch/user/k/kiesel/public/pp3.8T_PCL_Alignment/Results*/MinBias_2016/PCL_SiPixAl_DQM.root"))
-    firstNewRun = getNthLastRun(inputHists, 10)
-    firstNewRunPseudo = getNthLastRun(inputHistsPseudo, 10)
-    firstNewRunBoth = min([firstNewRun, firstNewRunPseudo])
-
-    todayStr = datetime.date.today().isoformat()
-    drawHistsVsRun(getHistsVsRun(inputHists), "pixAlignment_pcl_all_{}".format(todayStr))
-    drawHistsVsRun(getHistsVsRun(inputHists, firstNewRun), "pixAlignment_pcl_newest_{}".format(todayStr))
-    drawHistsVsRun(getHistsVsRun(inputHistsPseudo), "pixAlignment_pseudo_all_{}".format(todayStr))
-    drawHistsVsRun(getHistsVsRun(inputHistsPseudo, firstNewRunPseudo), "pixAlignment_pseudo_newest_{}".format(todayStr))
-    drawHistsVsRun(diffHistsVsRun(inputHists, inputHistsPseudo), "pixAlignment_diff_all_{}".format(todayStr))
-    drawHistsVsRun(diffHistsVsRun(inputHists, inputHistsPseudo, firstNewRunBoth), "pixAlignment_diff_newest_{}".format(todayStr))
+def getTableString(inputHists, maxPlots=5):
+    inputHists = collections.OrderedDict(reversed(list(inputHists.items())))
+    outString = "<table>\n<tr> <td> Run </td> <td> End time </td> <td>Parameters</td> </tr>"
     for run, hmap in inputHists.iteritems():
-        drawHists(hmap, "Run{}".format(run))
-    for run, hmap in inputHistsPseudo.iteritems():
-        drawHists(hmap, "Run{}_pseudo".format(run))
-
-    updateFile("indexTemplate.html", "/afs/cern.ch/user/k/kiesel/www/index.html",
-        {"date": todayStr,
-        "table": getTableString(list(set(inputHists.keys())|set(inputHistsPseudo.keys())))})
+        link = "No results"
+        if isFilledRun(hmap):
+            if maxPlots > 0:
+                link = "<a href=plots/Run{0}.pdf><img src='plots/Run{0}.png' border='0'/></a>".format(run)
+                maxPlots -= 1
+            else:
+                link = "<a href=plots/Run{0}.pdf>pdf</a>".format(run)
+        outString += "\n<tr> <td>{0}</td> <td>{1}</td> <td>{2}</td> </tr>".format(run, getTime(run), link)
+    outString += "\n</table>"
+    return outString
 
 def getUpdateRuns(tag):
     out = subprocess.check_output(["conddb", "list", tag])
     return [int(x.split()[0]) for x in out.split("\n")[2:] if x]
 
-
-def manual():
-    inputHists = getInputHists("/afs/cern.ch/user/k/kiesel/public/manualPCLforReReco/Results*/Run*.root")
-    updateRuns = [ x for x in getUpdateRuns("TrackerAlignment_v17_offline") if x>271952]
-    drawHistsVsRun(getHistsVsRun(inputHists), "pixAlignment_for_rereco", updateRuns)
-
 if __name__ == "__main__":
-    downloadViaJson.getGridCertificat()
-    downloadViaJson.downloadViaJson()
-    main()
-    #manual()
-    updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
-    updateTimes = [string2Time(getTime(x)) for x in updateRuns]
     inputHists = getInputHists()
-    graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
-    drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes)
+    downloadViaJson.getGridCertificat()
+    newRuns = downloadViaJson.downloadViaJson()
+
+    # draw new runs:
+    for run, hmap in inputHists.iteritems():
+        if run in newRuns:
+            drawHists(hmap, "Run{}".format(run))
+
+    # vs run
+    updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
     graphsVsRun = getGraphsVsRun(inputHists)
     drawGraphsVsX(graphsVsRun, "run", "vsRun", updateRuns)
+
+    # vs time
+    updateTimes = [string2Time(getTime(x)) for x in updateRuns]
+    graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
+    drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes)
+    updateFile("indexTemplate.html", "/afs/cern.ch/user/k/kiesel/www/index.html",
+        {
+            "date": datetime.date.today().isoformat(),
+            "table": getTableString(inputHists)
+        })
 
 
