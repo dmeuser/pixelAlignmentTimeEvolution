@@ -8,11 +8,13 @@
   </style>
   <body>
   Here the time evolution of the alignment of the CMS pixel large structures is shown.
-  The plots are updated every other day, last updated on ${date}.
+  The MillePede algorithm is run in the Prompt Calibration Loop (PCL) at Tier-0.
+  An acron job is updating them daily at 6am last on ${date}.
   The plots can be downloaded in vector format by clicking on the images.
   (<a href=https://github.com/kkiesel/pixelAlignmentTimeEvolution>Code used to produce the plots</a>)
 
-  <p><b>PCL at Tier0 (new style)</b></p>
+  <p><b>Progression of alignment parameters from PCL at Tier0 </b></p>
+  Versus run number
   <table>
       <tr>
           <td> <a href="plots/vsRun_Xpos.pdf"><img src="plots/vsRun_Xpos.png" border="0"/></a> </td>
@@ -36,40 +38,10 @@
           <td> <a href="plots/vsTime_Zrot.pdf"><img src="plots/vsTime_Zrot.png" border="0"/></a> </td>
      </tr>
   </table>
+  <p><b>Runs in detail </b></p>
+  ${table}
 
-  <p><b>Alignment for Rereco</b></p>
-  <a href="plots/pixAlignment_for_rereco.pdf"><img src="plots/pixAlignment_for_rereco.png" border="0" /></a><br/>
-
-  <p><b>PCL at Tier0</b></p>
-  Information is gathered from the DQM output of the ExpressStream
-
-  <p>For the whole data stream:<p>
-  <a href="plots/pixAlignment_pcl_all_${date}.pdf"><img src="plots/pixAlignment_pcl_all_${date}.png" border="0" /></a><br/>
-  The last few runs:<p>
-  <a href="plots/pixAlignment_pcl_newest_${date}.pdf"><img src="plots/pixAlignment_pcl_newest_${date}.png" border="0" /></a><br/>
-
-  <p><b>Manual workflow</b></p>
-  To validate the online settings, PCL is also done parallel
-  (<a href=https://github.com/JanFSchulte/PseudoPCL>Pseudo PCL</a>)
-  <p>For the whole data stream:<p>
-  <a href="plots/pixAlignment_pseudo_all_${date}.pdf"><img src="plots/pixAlignment_pseudo_all_${date}.png" border="0" /></a><br/>
-  The last few runs:<p>
-  <a href="plots/pixAlignment_pseudo_newest_${date}.pdf"><img src="plots/pixAlignment_pseudo_newest_${date}.png" border="0" /></a><br/>
-  <p><b>Differences between manual and Tier0 workflow</b></p>
-  For each run, the difference is drawn. Gaussian uncertanties are assumed.<p>
-  <p>For the whole data stream:<p>
-  <a href="plots/pixAlignment_diff_all_${date}.pdf"><img src="plots/pixAlignment_diff_all_${date}.png" border="0" /></a><br/>
-  The last few runs:<p>
-  <a href="plots/pixAlignment_diff_newest_${date}.pdf"><img src="plots/pixAlignment_diff_newest_${date}.png" border="0" /></a><br/>
-  </body>
-
-  <table>
-   <tr>
-     <th>Run</th>
-     <th>PCL</th>
-     <th>Manual</th>
-   </tr>
-   ${table}
-  </table>
+  <p><b>Manual Workflow for reference</b></p>
+  The manual workflow is not running any more, reference plots are shown <a href=manualWorkflow.html>here</a>.
 </html>
 
