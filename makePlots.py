@@ -157,7 +157,7 @@ def getLuminosity(minRun):
     +-------+------+--------+--------+-------------------+------------------+
     And extracts the total recorded luminosity (/fb).
     """
-    output = subprocess.check_output(["brilcalc", "lumi", "-b", "STABLE BEAMS", "--normtag=/afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_BRIL.json", "-u", "/fb", "--begin", str(minRun)])
+    output = subprocess.check_output(["/afs/cern.ch/user/k/kiesel/.local/bin/brilcalc", "lumi", "-b", "STABLE BEAMS", "--normtag=/afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_BRIL.json", "-u", "/fb", "--begin", str(minRun)])
     return float(output.split("\n")[-3].split("|")[-2])
 
 def getTime(run, dbName="runTime.pkl"):
