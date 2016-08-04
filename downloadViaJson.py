@@ -109,8 +109,8 @@ def getLastRun(path="./"):
                 maxRun = run
     return maxRun
 
-
 def downloadViaJson():
+    # downloads files and returns their run numbers
     dataset = "/StreamExpress/Run2016F-PromptCalibProdSiPixelAli-Express-v1/ALCAPROMPT"
     path = "/AlCaReco/SiPixelAli"
 
@@ -124,6 +124,7 @@ def downloadViaJson():
         print "Get run", run
         data = dqm_get_json(serverurl, str(run), dataset, path)
         saveAsFile(data, run, outputFolder)
+    return runs
 
 def getGridCertificat():
     # Reads in PW from text file ~/.globus/pw, which you have to create yourself
