@@ -133,6 +133,16 @@ def getRunEndTime(run):
     #returs a string similar to 2016-06-16 23:30:32
     return subprocess.check_output(["das_client.py --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
 
+def getValidRunBefore(run):
+    foundRun = False
+    while not foundRun:
+        try:
+            out = subprocess.check_output(["das_client.py --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
+            foundRun = True
+        except:
+            run -=1
+    return run
+
 def getLuminosity(minRun):
     """Expects something like
     +-------+------+--------+--------+-------------------+------------------+
@@ -151,8 +161,8 @@ def getTime(run, dbName="runTime.pkl"):
         with open(dbName) as f:
             db = pickle.load(f)
     if run not in db:
-        db[run] = getRunEndTime(run)
-        if db[run] == "[]\n": db[run] = getRunEndTime(run-1) # usually, the run before was a valid run
+        db[run] = getRunEndTime(getValidRunBefore(run))
+        db[run].replace('"','')
         print "Get Time for run {}: {}".format(run, db[run])
     with open(dbName, "wb") as f:
         pickle.dump(db, f)
