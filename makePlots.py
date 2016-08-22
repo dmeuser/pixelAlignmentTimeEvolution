@@ -168,7 +168,7 @@ def getTime(run, dbName="runTime.pkl"):
         pickle.dump(db, f)
     return db[run]
 
-def drawHists(hmap, savename):
+def drawHists(hmap, savename, run):
     hnames = ["Xpos", "Ypos","Zpos", "Xrot", "Yrot", "Zrot"]
     line = ROOT.TLine()
     line.SetLineColor(ROOT.kRed)
@@ -188,6 +188,8 @@ def drawHists(hmap, savename):
             h.GetXaxis().SetBinLabel(bin,objects[bin-1][0])
         h.GetXaxis().SetRange(1,6)
         h.GetYaxis().SetRangeUser(-50,50)
+        h.SetTitle("")
+        h.GetYaxis().SetTitle(parameters[ih].label)
         h.Draw("histe")
         cut = h.GetBinContent(8)
         if not cut:
@@ -196,6 +198,10 @@ def drawHists(hmap, savename):
         line.DrawLine(0,-cut,6,-cut)
         line.DrawLine(0,+cut,6,+cut)
     c.cd(0)
+    text = ROOT.TLatex()
+    text.SetTextSize(.75*text.GetTextSize())
+    text.DrawLatexNDC(.05, .967, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
+    text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
     save(savename, plotDir, [".pdf",".png"])
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
@@ -309,7 +315,7 @@ if __name__ == "__main__":
     # draw new runs:
     for run, hmap in inputHists.iteritems():
         if run in newRuns:
-            drawHists(hmap, "Run{}".format(run))
+            drawHists(hmap, "Run{}".format(run), run)
 
     # vs run
     updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
