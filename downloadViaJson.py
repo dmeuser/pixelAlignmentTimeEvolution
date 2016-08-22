@@ -128,7 +128,7 @@ def downloadViaJson():
 
 def getGridCertificat():
     # Reads in PW from text file ~/.globus/pw, which you have to create yourself
-    out = subprocess.check_output(["cat ~/.globus/pw | voms-proxy-init --voms cms --valid 999:00 --pwstdin --out {}".format(proxyName)], shell=True)
+    out = subprocess.check_output(["cat ~/.globus/pw | voms-proxy-init --voms cms --valid 192:00 --pwstdin --out {}".format(proxyName)], shell=True)
 
 if __name__ == "__main__":
     getGridCertificat()
