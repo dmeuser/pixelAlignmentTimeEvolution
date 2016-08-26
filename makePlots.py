@@ -310,11 +310,12 @@ def getUpdateRuns(tag):
 if __name__ == "__main__":
     inputHists = getInputHists()
     downloadViaJson.getGridCertificat()
-    newRuns = downloadViaJson.downloadViaJson()
+    downloadViaJson.downloadViaJson()
 
     # draw new runs:
+    alreadyPlotted = [ int(x[3:9]) for x in os.listdir(plotDir) if x.endswith(".pdf") and x.startswith("Run")]
     for run, hmap in inputHists.iteritems():
-        if run in newRuns:
+        if run not in alreadyPlotted:
             drawHists(hmap, "Run{}".format(run), run)
 
     # vs run
