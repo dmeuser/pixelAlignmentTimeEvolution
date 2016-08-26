@@ -16,7 +16,7 @@ from array import *
 serverurl = 'https://cmsweb.cern.ch/dqm/offline'
 ident = "DQMToJson/1.0 python/%d.%d.%d" % sys.version_info[:3]
 HTTPS = httplib.HTTPSConnection
-proxyName = "/afs/cern.ch/user/k/kiesel/.proxyCertificate"
+proxyName = "not yet defined"
 
 class X509CertAuth(HTTPS):
     ssl_key_file = None
@@ -128,8 +128,9 @@ def downloadViaJson():
 
 def getGridCertificat():
     # Reads in PW from text file ~/.globus/pw, which you have to create yourself
-    out = subprocess.check_output(["cat ~/.globus/pw | voms-proxy-init --voms cms --valid 192:00 --pwstdin --out {}".format(proxyName)], shell=True)
+    out = subprocess.check_output(["cat ~/.globus/pw | voms-proxy-init --voms cms --valid 192:00"], shell=True)
+    return out.split("\n")[4][17:-1]
 
 if __name__ == "__main__":
-    getGridCertificat()
+    proxyName = getGridCertificat()
     downloadViaJson()
