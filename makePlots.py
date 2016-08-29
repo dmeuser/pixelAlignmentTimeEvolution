@@ -202,7 +202,7 @@ def drawHists(hmap, savename, run):
     text.SetTextSize(.75*text.GetTextSize())
     text.DrawLatexNDC(.05, .967, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
     text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
-    save(savename, plotDir, [".pdf",".png"])
+    save(savename, plotDir, [".pdf",".png", ".root"])
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
     """ Options for xaxis: time, run"""
@@ -248,7 +248,7 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
         text.DrawLatexNDC(.08, .945, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
         text.DrawLatexNDC(.79, .945, "{:.1f} fb^{{-1}} (13TeV)".format(lumi))
         if ip == 0: leg.Draw()
-        save(savename+"_"+p.name, plotDir, endings=[".pdf",".png"])
+        save(savename+"_"+p.name, plotDir, endings=[".pdf",".png", ".root"])
 
 
 def string2Time(timeStr):
