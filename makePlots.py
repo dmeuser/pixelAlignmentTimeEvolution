@@ -308,9 +308,9 @@ def getUpdateRuns(tag):
     return [int(x.split()[0]) for x in out.split("\n")[2:] if x]
 
 if __name__ == "__main__":
-    inputHists = getInputHists()
     downloadViaJson.getGridCertificat()
     downloadViaJson.downloadViaJson()
+    inputHists = getInputHists()
 
     # draw new runs:
     alreadyPlotted = [ int(x[3:9]) for x in os.listdir(plotDir) if x.endswith(".pdf") and x.startswith("Run")]
