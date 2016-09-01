@@ -168,12 +168,16 @@ def getTime(run, dbName="runTime.pkl"):
         pickle.dump(db, f)
     return db[run]
 
+def sendMail(adress, subject="", body=""):
+    os.system("echo \"{}\" | mail -s \"{}\" {}".format(body, subject, adress))
+
 def drawHists(hmap, savename, run):
     hnames = ["Xpos", "Ypos","Zpos", "Xrot", "Yrot", "Zrot"]
     line = ROOT.TLine()
     line.SetLineColor(ROOT.kRed)
     c = ROOT.TCanvas(randomName(),"",1200,600)
     c.Divide(3,2)
+    dbUpdated = False
     for ih, hname in enumerate(hnames):
         c.cd(ih+1)
         h = hmap[hname]
@@ -182,6 +186,7 @@ def drawHists(hmap, savename, run):
         cutStatus = exceedsCuts(h)
         if cutStatus == "update":
             h.SetFillColor(ROOT.kOrange-9)
+            dbUpdated = True
         elif cutStatus == "fail":
             h.SetFillColor(ROOT.kRed)
         for bin in range(1,7):
@@ -203,6 +208,8 @@ def drawHists(hmap, savename, run):
     text.DrawLatexNDC(.05, .967, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
     text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
+    if dbUpdated:
+        sendMail("kiesel@cern.ch", "[PCL] Cuts exceeded", "Run: {}".format(run))
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
     """ Options for xaxis: time, run"""
