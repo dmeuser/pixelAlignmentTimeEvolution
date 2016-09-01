@@ -336,7 +336,7 @@ if __name__ == "__main__":
     drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes)
     updateFile("indexTemplate.html", "/afs/cern.ch/user/k/kiesel/www/index.html",
         {
-            "date": datetime.date.today().isoformat(),
+            "date": datetime.datetime.today().isoformat(' '),
             "table": getTableString(inputHists)
         })
 
