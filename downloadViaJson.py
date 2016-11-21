@@ -118,7 +118,7 @@ def getLastRun(path="./"):
 
 def downloadViaJson():
     # downloads files and returns their run numbers
-    dataset = "/StreamExpressPA/PARun2016B-PromptCalibProdSiPixelAli-Express-v1/ALCAPROMPT"
+    dataset = "/StreamExpressPA/PARun2016C-PromptCalibProdSiPixelAli-Express-v1/ALCAPROMPT"
     path = "/AlCaReco/SiPixelAli"
 
     outputFolder = "root-files"
