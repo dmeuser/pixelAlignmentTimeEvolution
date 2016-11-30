@@ -160,7 +160,7 @@ def getTime(run, dbName="runTime.pkl"):
     if os.path.exists(dbName):
         with open(dbName) as f:
             db = pickle.load(f)
-    if run not in db:
+    if run not in db or db[run] == "\n":
         db[run] = getRunEndTime(getValidRunBefore(run))
         db[run] = db[run].replace('"','')
         print "Get Time for run {}: {}".format(run, db[run])
