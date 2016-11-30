@@ -13,7 +13,8 @@ import subprocess
 import pickle
 import math
 
-import ROOT
+import suppressor
+with suppressor.suppress_stdout_stderr(): import ROOT
 import downloadViaJson
 import style
 
