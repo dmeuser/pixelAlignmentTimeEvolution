@@ -327,7 +327,7 @@ if __name__ == "__main__":
             drawHists(hmap, "Run{}".format(run), run)
 
     # vs run
-    updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
+    updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v1_express") if x >= 273000]
     graphsVsRun = getGraphsVsRun(inputHists)
     drawGraphsVsX(graphsVsRun, "run", "vsRun", updateRuns)
 
