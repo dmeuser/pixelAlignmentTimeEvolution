@@ -48,7 +48,7 @@ objects = [
     ("FPIX(x-,z+)", ROOT.kMagenta),
 ]
 
-plotDir = "/afs/cern.ch/user/k/kiesel/www/plots"
+plotDir = "/eos/project/c/cmsweb/www/pixAlignSurv/plots"
 
 def save(name, folder="plots", endings=[".pdf"]):
     for ending in endings:
@@ -335,7 +335,7 @@ if __name__ == "__main__":
     updateTimes = [string2Time(getTime(x)) for x in updateRuns]
     graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
     drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes)
-    updateFile("indexTemplate.html", "/afs/cern.ch/user/k/kiesel/www/index.html",
+    updateFile("indexTemplate.html", "/eos/project/c/cmsweb/www/pixAlignSurv/index.html",
         {
             "date": datetime.datetime.today().isoformat(' '),
             "table": getTableString(inputHists)
