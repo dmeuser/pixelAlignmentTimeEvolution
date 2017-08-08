@@ -116,9 +116,13 @@ def getLastRun(path="./"):
                 maxRun = run
     return maxRun
 
+def getNewestDataset(pattern="/StreamExpress/Run2017*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):
+    out = subprocess.check_output(["das_client --limit 0 --query='dataset={} | sort dataset.creation_time'".format(pattern)], shell=True)
+    return out.split("\n")[-2]
+
 def downloadViaJson():
     # downloads files and returns their run numbers
-    dataset = "/StreamExpress/Run2017B-PromptCalibProdSiPixelAli-Express-v2/ALCAPROMPT"
+    dataset = "" or getNewestDataset()
     path = "/AlCaReco/SiPixelAli"
 
     outputFolder = "root-files"
