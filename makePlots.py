@@ -212,15 +212,13 @@ def drawHists(hmap, savename, run):
     if dbUpdated:
         sendMail("kiesel@cern.ch auterman@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
 
-def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
+def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
     """ Options for xaxis: time, run"""
-    lumi = getLuminosity(273000)
     if not gmap: return
     line = ROOT.TLine()
     line.SetLineColor(ROOT.kGray)
     updateLine = ROOT.TLine()
     updateLine.SetLineStyle(2)
-    updateLine.SetLineColor(ROOT.kGray)
     leg = ROOT.TLegend(.2, .65, .55, .9)
     leg.SetNColumns(2)
     leg.AddEntry(line, "Limit", "l")
@@ -251,10 +249,14 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[]):
         line.DrawLine(xmin, -p.cut, xmax, -p.cut)
         line.DrawLine(xmin, +p.cut, xmax, +p.cut)
         for r in specialRuns:
+            updateLine.SetLineColor(ROOT.kGray)
+            updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
+        for r in specialRuns2:
+            updateLine.SetLineColor(ROOT.kGreen)
             updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
         text = ROOT.TLatex()
         text.DrawLatexNDC(.08, .945, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
-        text.DrawLatexNDC(.79, .945, "{:.1f} fb^{{-1}} (13TeV)".format(lumi))
+        text.DrawLatexNDC(.79, .945, "Year 2017 (13TeV)")
         if ip == 0: leg.Draw()
         save(savename+"_"+p.name, plotDir, endings=[".pdf",".png", ".root"])
 
@@ -328,13 +330,15 @@ if __name__ == "__main__":
 
     # vs run
     updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v1_express") if x >= 273000]
+    updateRuns2 = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
     graphsVsRun = getGraphsVsRun(inputHists)
-    drawGraphsVsX(graphsVsRun, "run", "vsRun", updateRuns)
+    drawGraphsVsX(graphsVsRun, "run", "vsRun", updateRuns, updateRuns2)
 
     # vs time
     updateTimes = [string2Time(getTime(x)) for x in updateRuns]
+    updateTimes2 = [string2Time(getTime(x)) for x in updateRuns2]
     graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
-    drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes)
+    drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes, updateTimes2)
     updateFile("indexTemplate.html", "/eos/project/c/cmsweb/www/pixAlignSurv/index.html",
         {
             "date": datetime.datetime.today().isoformat(' '),
