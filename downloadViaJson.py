@@ -116,8 +116,9 @@ def getLastRun(path="./"):
                 maxRun = run
     return maxRun
 
-def getNewestDataset(pattern="/StreamExpress/Run2017*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):
-    out = subprocess.check_output(["das_client --limit 0 --query='dataset={} | sort dataset.creation_time'".format(pattern)], shell=True)
+def getNewestDataset(pattern="/StreamExpress/Run2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):
+#    out = subprocess.check_output(["das_client --limit 0 --query='dataset={} | sort dataset.creation_time'".format(pattern)], shell=True)
+    out = subprocess.check_output(["dasgoclient -query='dataset={}'".format(pattern)], shell=True)
     return out.split("\n")[-2]
 
 def downloadViaJson():

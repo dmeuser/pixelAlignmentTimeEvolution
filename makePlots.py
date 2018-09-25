@@ -12,9 +12,11 @@ import shutil
 import subprocess
 import pickle
 import math
+import json
 
 import suppressor
-with suppressor.suppress_stdout_stderr(): import ROOT
+#with suppressor.suppress_stdout_stderr(): 
+import ROOT
 import downloadViaJson
 import style
 
@@ -131,18 +133,35 @@ def exceedsCuts(h, cutDict=False):
         return "good"
 
 def getRunEndTime(run):
-    #returs a string similar to 2016-06-16 23:30:32
-    return subprocess.check_output(["das_client.py --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
+    try:
+    	#returs a string similar to 2016-06-16 23:30:32
+    	#return subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
+    	output = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True).split('}')[0]
+    	output+='}'
+    	output = output.translate(None, '[]')
+	json_acceptable_string = output.replace("'", "\"")
+    	timeString = json.loads(json_acceptable_string)
+    	foundtimestr = timeString["stopTime"]
+	b = "MonTueWdThFriSat"
+	for char in b:
+		foundtimestr = foundtimestr.replace(char,"")
+	foundtimestr = datetime.datetime.strptime(foundtimestr, " %d-%m-%y %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+    except:
+        foundtimestr = "0"
+    return foundtimestr
+    		
 
 def getValidRunBefore(run):
     foundRun = False
+    #print "getValidRunBefore(run) for run={}",run
     while not foundRun:
         try:
-            out = subprocess.check_output(["das_client.py --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
+            out = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
             foundRun = True
         except:
             run -=1
     return run
+    #return 0
 
 def getLuminosity(minRun):
     """Expects something like
@@ -153,7 +172,7 @@ def getLuminosity(minRun):
     +-------+------+--------+--------+-------------------+------------------+
     And extracts the total recorded luminosity (/fb).
     """
-    output = subprocess.check_output(["/afs/cern.ch/user/k/kiesel/.local/bin/brilcalc", "lumi", "-b", "STABLE BEAMS", "--normtag=/afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_BRIL.json", "-u", "/fb", "--begin", str(minRun)])
+    output = subprocess.check_output(["/afs/cern.ch/user/a/auterman/.local/bin/brilcalc", "lumi", "-b", "STABLE BEAMS", "--normtag=/afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_BRIL.json", "-u", "/fb", "--begin", str(minRun)])
     return float(output.split("\n")[-3].split("|")[-2])
 
 def getTime(run, dbName="runTime.pkl"):
@@ -210,7 +229,7 @@ def drawHists(hmap, savename, run):
     text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
     if dbUpdated:
-        sendMail("kiesel@cern.ch auterman@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
+        sendMail("auterman@cern.ch cms-tracker-alignment-conveners@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
     """ Options for xaxis: time, run"""
@@ -251,17 +270,18 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
         for r in specialRuns:
             updateLine.SetLineColor(ROOT.kGray)
             updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
-        for r in specialRuns2:
-            updateLine.SetLineColor(ROOT.kGreen)
-            updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
+        #for r in specialRuns2:
+        #    updateLine.SetLineColor(ROOT.kGreen)
+        #    updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
         text = ROOT.TLatex()
         text.DrawLatexNDC(.08, .945, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
-        text.DrawLatexNDC(.79, .945, "Year 2017 (13TeV)")
+        text.DrawLatexNDC(.79, .945, "Year 2018 (13TeV)")
         if ip == 0: leg.Draw()
         save(savename+"_"+p.name, plotDir, endings=[".pdf",".png", ".root"])
 
 
 def string2Time(timeStr):
+    print timeStr
     return ROOT.TDatime(timeStr).Convert(0)
 
 def getGraphsVsRun(inputHists, minRun=-1, convertToTime=False):
@@ -328,17 +348,29 @@ if __name__ == "__main__":
         if run not in alreadyPlotted:
             drawHists(hmap, "Run{}".format(run), run)
 
+		
     # vs run
-    updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v1_express") if x >= 273000]
-    updateRuns2 = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
+    #updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v1_express") if x >= 273000]
+    #updateRuns2 = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
+    updateRuns  = [x for x in getUpdateRuns("SiPixelLorentzAngle_fromAlignment_v1_hlt") if x >= 315252]
+    #updateRuns2 = [x for x in getUpdateRuns("101X_dataRun2_Queue") if x >= 315000]
+    updateRuns2 = []
     graphsVsRun = getGraphsVsRun(inputHists)
+    
+    #print "Starting with plots vs run number:"
     drawGraphsVsX(graphsVsRun, "run", "vsRun", updateRuns, updateRuns2)
 
+    #print "Starting with plots vs time:"
     # vs time
     updateTimes = [string2Time(getTime(x)) for x in updateRuns]
-    updateTimes2 = [string2Time(getTime(x)) for x in updateRuns2]
+    updateTimes2 = [] #[string2Time(getTime(x)) for x in updateRuns2]
     graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
     drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes, updateTimes2)
+#    updateFile("indexTemplate.html", "index.html",
+#        {
+#            "date": datetime.datetime.today().isoformat(' '),
+#            "table": getTableString(inputHists)
+#        })
     updateFile("indexTemplate.html", "/eos/project/c/cmsweb/www/pixAlignSurv/index.html",
         {
             "date": datetime.datetime.today().isoformat(' '),
