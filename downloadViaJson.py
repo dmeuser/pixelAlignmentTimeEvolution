@@ -123,7 +123,9 @@ def getNewestDataset(pattern="/StreamExpress/Run2018*-PromptCalibProdSiPixelAli-
 
 def downloadViaJson():
     # downloads files and returns their run numbers
+    #~ dataset = "" or getNewestDataset()
     dataset = "" or getNewestDataset()
+    print dataset
     path = "/AlCaReco/SiPixelAli"
 
     outputFolder = "root-files"
@@ -132,6 +134,7 @@ def downloadViaJson():
 
     runs = getRuns(dataset)
     maxRun = getLastRun(outputFolder)
+    #~ maxRun = 319318
     runs = [r for r in runs if r>maxRun]
 
     for run in runs:

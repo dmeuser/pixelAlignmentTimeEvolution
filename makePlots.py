@@ -13,6 +13,7 @@ import subprocess
 import pickle
 import math
 import json
+import ast
 
 import suppressor
 #with suppressor.suppress_stdout_stderr(): 
@@ -51,6 +52,7 @@ objects = [
 ]
 
 plotDir = "/eos/project/c/cmsweb/www/pixAlignSurv/plots"
+#~ plotDir = "/afs/cern.ch/user/d/dmeuser/alignment/pixelAlignmentTimeEvolution/plots"
 
 def save(name, folder="plots", endings=[".pdf"]):
     for ending in endings:
@@ -136,16 +138,19 @@ def getRunEndTime(run):
     try:
     	#returs a string similar to 2016-06-16 23:30:32
     	#return subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
-    	output = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True).split('}')[0]
-    	output+='}'
-    	output = output.translate(None, '[]')
-	json_acceptable_string = output.replace("'", "\"")
-    	timeString = json.loads(json_acceptable_string)
-    	foundtimestr = timeString["stopTime"]
+    	#~ output = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True).split('}')[0]
+    	output = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
+        output = output.split("\n")
+        r = re.compile(".*stopTime")
+        newOutput = filter(r.match, output)
+        jsonDict = json.loads(newOutput[0].translate(None,"[]"))
+    	foundtimestr = jsonDict["stopTime"]
 	b = "MonTueWdThFriSat"
 	for char in b:
 		foundtimestr = foundtimestr.replace(char,"")
 	foundtimestr = datetime.datetime.strptime(foundtimestr, " %d-%m-%y %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+    except KeyboardInterrupt:
+        raise
     except:
         foundtimestr = "0"
     return foundtimestr
@@ -159,6 +164,7 @@ def getValidRunBefore(run):
             out = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
             foundRun = True
         except:
+            print "in"
             run -=1
     return run
     #return 0
@@ -228,9 +234,9 @@ def drawHists(hmap, savename, run):
     text.DrawLatexNDC(.05, .967, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
     text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
-    if dbUpdated:
+    #~ if dbUpdated:
         #~ sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
-        sendMail("danilo.meuser@rwth-aachen.de", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
+        #~ sendMail("danilo.meuser@rwth-aachen.de", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
     """ Options for xaxis: time, run"""
@@ -282,7 +288,6 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
 
 
 def string2Time(timeStr):
-    print timeStr
     return ROOT.TDatime(timeStr).Convert(0)
 
 def getGraphsVsRun(inputHists, minRun=-1, convertToTime=False):
@@ -367,11 +372,11 @@ if __name__ == "__main__":
     updateTimes2 = [] #[string2Time(getTime(x)) for x in updateRuns2]
     graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
     drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes, updateTimes2)
-#    updateFile("indexTemplate.html", "index.html",
-#        {
-#            "date": datetime.datetime.today().isoformat(' '),
-#            "table": getTableString(inputHists)
-#        })
+    #~ updateFile("indexTemplate.html", "index.html",
+        #~ {
+            #~ "date": datetime.datetime.today().isoformat(' '),
+            #~ "table": getTableString(inputHists)
+        #~ })
     updateFile("indexTemplate.html", "/eos/project/c/cmsweb/www/pixAlignSurv/index.html",
         {
             "date": datetime.datetime.today().isoformat(' '),
