@@ -164,8 +164,8 @@ def getValidRunBefore(run):
             out = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
             foundRun = True
         except:
-            print "in"
-            run -=1
+			print run
+			run -=1
     return run
     #return 0
 
@@ -234,8 +234,8 @@ def drawHists(hmap, savename, run):
     text.DrawLatexNDC(.05, .967, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
     text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
-    #~ if dbUpdated:
-        #~ sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
+    if dbUpdated:
+        sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
         #~ sendMail("danilo.meuser@rwth-aachen.de", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):

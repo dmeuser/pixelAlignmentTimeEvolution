@@ -104,6 +104,10 @@ def saveAsFile(data, run, path="./"):
 
 def getRuns(dataset):
     out = subprocess.check_output(["das_client --limit 0 --query='run dataset={}'".format(dataset)], shell=True)
+    print len(out.split("\n"))
+    if len(out.split("\n"))<=1:
+		os.system("./acronExe.sh")
+		sys.exit()
     return sorted([int(r) for r in out.split("\n") if r])
 
 def getLastRun(path="./"):
@@ -116,7 +120,8 @@ def getLastRun(path="./"):
                 maxRun = run
     return maxRun
 
-def getNewestDataset(pattern="/StreamExpress/Run2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):
+#~ def getNewestDataset(pattern="/StreamExpress/Run2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):		#Proton runs
+def getNewestDataset(pattern="/StreamHIExpress/HIRun2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):	#Ion runs
 #    out = subprocess.check_output(["das_client --limit 0 --query='dataset={} | sort dataset.creation_time'".format(pattern)], shell=True)
     out = subprocess.check_output(["dasgoclient -query='dataset={}'".format(pattern)], shell=True)
     return out.split("\n")[-2]
@@ -134,7 +139,8 @@ def downloadViaJson():
 
     runs = getRuns(dataset)
     maxRun = getLastRun(outputFolder)
-    #~ maxRun = 319318
+    print "Last Run:",maxRun
+    #~ maxRun = 326886
     runs = [r for r in runs if r>maxRun]
 
     for run in runs:
