@@ -139,7 +139,7 @@ def getRunEndTime(run):
     	#returs a string similar to 2016-06-16 23:30:32
     	#return subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
     	#~ output = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True).split('}')[0]
-    	output = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
+    	output = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} system=runregistry| grep run.end_time\"".format(run)], shell=True)
         output = output.split("\n")
         r = re.compile(".*stopTime")
         newOutput = filter(r.match, output)
@@ -161,7 +161,7 @@ def getValidRunBefore(run):
     #print "getValidRunBefore(run) for run={}",run
     while not foundRun:
         try:
-            out = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
+            out = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} system=runregistry| grep run.end_time\"".format(run)], shell=True)
             foundRun = True
         except:
 			print run
@@ -186,12 +186,13 @@ def getTime(run, dbName="runTime.pkl"):
     if os.path.exists(dbName):
         with open(dbName) as f:
             db = pickle.load(f)
-    if run not in db or db[run] == "\n":
+    if run not in db or db[run] == "\n" or db[run] == "0":
         db[run] = getRunEndTime(getValidRunBefore(run))
         db[run] = db[run].replace('"','')
         print "Get Time for run {}: {}".format(run, db[run])
     with open(dbName, "wb") as f:
         pickle.dump(db, f)
+     
     return db[run]
 
 def sendMail(adress, subject="", body=""):
@@ -295,6 +296,7 @@ def getGraphsVsRun(inputHists, minRun=-1, convertToTime=False):
     gdefault = ROOT.TGraphErrors()
     graphsVsRun = {}
     for iRun, (runNr, hmap) in enumerate(inputHists.iteritems()):
+        if convertToTime and getTime(runNr)=="0": continue #remove runs with no valid time stamp from plot vs time
         xVar = string2Time(getTime(runNr)) if convertToTime else runNr
         for hname, h in hmap.iteritems():
             if hname not in graphsVsRun: graphsVsRun[hname] = [ gdefault.Clone() for i in range(6) ]
