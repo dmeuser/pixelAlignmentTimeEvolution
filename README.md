@@ -7,7 +7,7 @@ This code generates histograms based on the PCL-Alignment for the SIPixel large 
 `makePlots.py` is the main script, which is executed while updating the webpage. The following main tasks are fulfilled running this script:
 
 * Dowload of root files containing the PCL-Alignment for each run:
-..* For this step the `downloadViaJson.py` script is used.
+    * For this step the `downloadViaJson.py` script is used.
 ..* After enabling the Grid-Certificate the newest dataset for a given pattern, e.g. `/StreamExpress/Run2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT`, is searched. This pattern has to be manually adapted when changing to a new year or HI runs.
 ..* The root files for runs not already present in the `root-files` folder are downloaded from dqm.
 ..* A list of new runs is returned to the main script.
