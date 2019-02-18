@@ -1,6 +1,6 @@
 ### Purpose
 
-This code generates histograms based on the PCL-Alignment for the SIPixel large structures. The histograms can be accessed via a [webpage](http://cmspixalignsurv.web.cern.ch/cmsPixAlignSurv/). This webpage is updated each morning to add the runs of the last day.
+This code generates histograms based on the PCL-Alignment for the SIPixel large structures. The histograms can be accessed via a [web page](http://cmspixalignsurv.web.cern.ch/cmsPixAlignSurv/). This web page is updated each morning to add the runs of the last day.
 
 ### Code
 
@@ -25,7 +25,7 @@ This code generates histograms based on the PCL-Alignment for the SIPixel large 
     * If available the time stamp present in `runTime.pkl` is assigned to the corresponding run.
     * In case of a missing time stamp or new runs this time stamp is taken from the runRegistry using the dasgoclient.
 
-* Update webpage:
+* Update web page:
     * The html file is based on the structure available in `indexTemplate.html`.
     * The time is updated with the current time stamp.
     * For each run the runNr, EndTime and the corresponding alignment plot for the six parameters are shown.
