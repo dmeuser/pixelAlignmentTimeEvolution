@@ -137,18 +137,11 @@ def exceedsCuts(h, cutDict=False):
 def getRunEndTime(run):
     try:
     	#returs a string similar to 2016-06-16 23:30:32
-    	#return subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True)
-    	#~ output = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} | grep run.end_time\"".format(run)], shell=True).split('}')[0]
-    	output = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} system=runregistry| grep run.end_time\"".format(run)], shell=True)
-        output = output.split("\n")
-        r = re.compile(".*stopTime")
-        newOutput = filter(r.match, output)
-        jsonDict = json.loads(newOutput[0].translate(None,"[]"))
-    	foundtimestr = jsonDict["stopTime"]
-	b = "MonTueWdThFriSat"
-	for char in b:
-		foundtimestr = foundtimestr.replace(char,"")
-	foundtimestr = datetime.datetime.strptime(foundtimestr, " %d-%m-%y %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+    	output = subprocess.check_output(["conddb listRuns | grep \"{} \"".format(run)], shell=True)
+        output = output.split("  ")
+        output = output[4].split(".")[0]
+    	foundtimestr = output
+        datetime.datetime.strptime(foundtimestr, "%Y-%m-%d %H:%M:%S")
     except KeyboardInterrupt:
         raise
     except:
@@ -161,10 +154,11 @@ def getValidRunBefore(run):
     #print "getValidRunBefore(run) for run={}",run
     while not foundRun:
         try:
-            out = subprocess.check_output(["dasgoclient --limit=0 --query=\"run={} system=runregistry| grep run.end_time\"".format(run)], shell=True)
+            out = subprocess.check_output(["conddb listRuns | grep \"{} \"".format(run)], shell=True)
             foundRun = True
         except:
 			print run
+			print "no valid"
 			run -=1
     return run
     #return 0
@@ -236,8 +230,8 @@ def drawHists(hmap, savename, run):
     text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
     if dbUpdated:
-        sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
-        #~ sendMail("danilo.meuser@rwth-aachen.de", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
+        #  ~sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
+        sendMail("danilo.meuser@rwth-aachen.de", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
     """ Options for xaxis: time, run"""
@@ -343,7 +337,7 @@ def getTableString(inputHists, maxPlots=5):
 
 def getUpdateRuns(tag):
     out = subprocess.check_output(["conddb", "list", tag])
-    return [int(x.split()[0]) for x in out.split("\n")[2:] if x]
+    return [int(x.split()[0]) for x in out.split("\n")[2:-2] if x]
 
 if __name__ == "__main__":
     downloadViaJson.getGridCertificat()
@@ -358,18 +352,20 @@ if __name__ == "__main__":
 
 		
     # vs run
-    #updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v1_express") if x >= 273000]
+    #~ updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v1_express") if x >= 273000]
     #updateRuns2 = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
-    updateRuns  = [x for x in getUpdateRuns("SiPixelLorentzAngle_fromAlignment_v1_hlt") if x >= 315252]
+    #  ~updateRuns  = [x for x in getUpdateRuns("SiPixelLorentzAngle_fromAlignment_v1_hlt") if x >= 315252]
+    updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject_38T_v1_prompt") if x >= 315252]
+    #  ~updateRuns  = []
     #updateRuns2 = [x for x in getUpdateRuns("101X_dataRun2_Queue") if x >= 315000]
     updateRuns2 = []
     graphsVsRun = getGraphsVsRun(inputHists)
     
-    #print "Starting with plots vs run number:"
+    print "Starting with plots vs run number:"
     drawGraphsVsX(graphsVsRun, "run", "vsRun", updateRuns, updateRuns2)
 
-    #print "Starting with plots vs time:"
     # vs time
+    print "Starting with plots vs time:"
     updateTimes = [string2Time(getTime(x)) for x in updateRuns]
     updateTimes2 = [] #[string2Time(getTime(x)) for x in updateRuns2]
     graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
