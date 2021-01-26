@@ -17,6 +17,7 @@ serverurl = 'https://cmsweb.cern.ch/dqm/offline'
 ident = "DQMToJson/1.0 python/%d.%d.%d" % sys.version_info[:3]
 HTTPS = httplib.HTTPSConnection
 
+
 def getGridCertificat():
     # Reads in PW from text file ~/.globus/pw, which you have to create yourself
     out = subprocess.check_output(["cat ~/.globus/pw | voms-proxy-init --voms cms --valid 192:00"], shell=True)
@@ -103,7 +104,7 @@ def saveAsFile(data, run, path="./"):
     f.Close()
 
 def getRuns(dataset):
-    out = subprocess.check_output(["das_client --limit 0 --query='run dataset={}'".format(dataset)], shell=True)
+    out = subprocess.check_output(["dasgoclient --limit 0 --query='run dataset={}'".format(dataset)], shell=True)
     print len(out.split("\n"))
     if len(out.split("\n"))<=1:
 		os.system("./acronExe.sh")
@@ -120,15 +121,13 @@ def getLastRun(path="./"):
                 maxRun = run
     return maxRun
 
-#~ def getNewestDataset(pattern="/StreamExpress/Run2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):		#Proton runs
+#  ~def getNewestDataset(pattern="/StreamExpress/Run2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):		#Proton runs
 def getNewestDataset(pattern="/StreamHIExpress/HIRun2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):	#Ion runs
-#    out = subprocess.check_output(["das_client --limit 0 --query='dataset={} | sort dataset.creation_time'".format(pattern)], shell=True)
     out = subprocess.check_output(["dasgoclient -query='dataset={}'".format(pattern)], shell=True)
     return out.split("\n")[-2]
 
 def downloadViaJson():
-    # downloads files and returns their run numbers
-    #~ dataset = "" or getNewestDataset()
+    # downloads files for runs, which are not already present in root-files folders and returns their run numbers
     dataset = "" or getNewestDataset()
     print dataset
     path = "/AlCaReco/SiPixelAli"
@@ -140,7 +139,7 @@ def downloadViaJson():
     runs = getRuns(dataset)
     maxRun = getLastRun(outputFolder)
     print "Last Run:",maxRun
-    #~ maxRun = 326886
+    #~ maxRun = 327449
     runs = [r for r in runs if r>maxRun]
 
     for run in runs:
