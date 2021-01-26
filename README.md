@@ -23,7 +23,7 @@ This code generates histograms based on the PCL-Alignment for the SIPixel large 
 
 * Plot alignment VS time:
     * If available the time stamp present in `runTime.pkl` is assigned to the corresponding run.
-    * In case of a missing time stamp or new runs this time stamp is taken from the runRegistry using the dasgoclient.
+    * In case of a missing time stamp or new runs this time stamp is taken from conddb using `conddb listRuns`.
 
 * Update web page:
     * The html file is based on the structure available in `indexTemplate.html`.
