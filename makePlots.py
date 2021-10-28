@@ -52,7 +52,7 @@ objects = [
 ]
 
 plotDir = "/eos/project/c/cmsweb/www/pixAlignSurv/plots"
-#~ plotDir = "/afs/cern.ch/user/d/dmeuser/alignment/pixelAlignmentTimeEvolution/plots"
+#  ~plotDir = "/afs/cern.ch/user/d/dmeuser/alignment/pixelAlignmentTimeEvolution/plots"
 
 def save(name, folder="plots", endings=[".pdf"]):
     for ending in endings:
@@ -135,33 +135,22 @@ def exceedsCuts(h, cutDict=False):
         return "good"
 
 def getRunEndTime(run):
-    try:
-    	#returs a string similar to 2016-06-16 23:30:32
-    	output = subprocess.check_output(["conddb listRuns | grep \"{} \"".format(run)], shell=True)
-        output = output.split("  ")
-        output = output[4].split(".")[0]
-    	foundtimestr = output
-        datetime.datetime.strptime(foundtimestr, "%Y-%m-%d %H:%M:%S")
-    except KeyboardInterrupt:
-        raise
-    except:
-        foundtimestr = "0"
+    foundtimestr = "0"
+    currentRun = run
+    while foundtimestr == "0":
+        try:
+            #returs a string similar to 2016-06-16 23:30:32
+            output = subprocess.check_output(["conddb listRuns --match {} | grep \"{} \"".format(currentRun,currentRun)], shell=True)
+            output = output.split("  ")
+            output = output[4].split(".")[0]
+            foundtimestr = output
+            datetime.datetime.strptime(foundtimestr, "%Y-%m-%d %H:%M:%S")
+        except KeyboardInterrupt:
+            raise
+        except:
+            currentRun -= 1
     return foundtimestr
     		
-
-def getValidRunBefore(run):
-    foundRun = False
-    #print "getValidRunBefore(run) for run={}",run
-    while not foundRun:
-        try:
-            out = subprocess.check_output(["conddb listRuns | grep \"{} \"".format(run)], shell=True)
-            foundRun = True
-        except:
-			print run
-			print "no valid"
-			run -=1
-    return run
-    #return 0
 
 def getLuminosity(minRun):
     """Expects something like
@@ -181,7 +170,7 @@ def getTime(run, dbName="runTime.pkl"):
         with open(dbName) as f:
             db = pickle.load(f)
     if run not in db or db[run] == "\n" or db[run] == "0":
-        db[run] = getRunEndTime(getValidRunBefore(run))
+        db[run] = getRunEndTime(run)
         db[run] = db[run].replace('"','')
         print "Get Time for run {}: {}".format(run, db[run])
     with open(dbName, "wb") as f:
@@ -227,7 +216,8 @@ def drawHists(hmap, savename, run):
     text = ROOT.TLatex()
     text.SetTextSize(.75*text.GetTextSize())
     text.DrawLatexNDC(.05, .967, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
-    text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
+    #  ~text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
+    text.DrawLatexNDC(.82, .967, "Run {}".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
     if dbUpdated:
         #  ~sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
@@ -276,8 +266,9 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
         #    updateLine.SetLineColor(ROOT.kGreen)
         #    updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
         text = ROOT.TLatex()
-        text.DrawLatexNDC(.08, .945, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
-        text.DrawLatexNDC(.79, .945, "Year 2018 (13TeV)")
+        text.DrawLatexNDC(.15, .95, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
+        #  ~text.DrawLatexNDC(.79, .945, "Year 2018 (13TeV)")
+        text.DrawLatexNDC(.73, .95, "Commissioning 2021")
         if ip == 0: leg.Draw()
         save(savename+"_"+p.name, plotDir, endings=[".pdf",".png", ".root"])
 
@@ -355,7 +346,8 @@ if __name__ == "__main__":
     #~ updateRuns = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v1_express") if x >= 273000]
     #updateRuns2 = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
     #  ~updateRuns  = [x for x in getUpdateRuns("SiPixelLorentzAngle_fromAlignment_v1_hlt") if x >= 315252]
-    updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject_38T_v1_prompt") if x >= 315252]
+    #  ~updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject_38T_v1_prompt") if x >= 315252]
+    updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject_38T_v1_prompt") if x >= 327575]
     #  ~updateRuns  = []
     #updateRuns2 = [x for x in getUpdateRuns("101X_dataRun2_Queue") if x >= 315000]
     updateRuns2 = []
@@ -370,11 +362,11 @@ if __name__ == "__main__":
     updateTimes2 = [] #[string2Time(getTime(x)) for x in updateRuns2]
     graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
     drawGraphsVsX(graphsVsTime, "time", "vsTime", updateTimes, updateTimes2)
-    #~ updateFile("indexTemplate.html", "index.html",
-        #~ {
-            #~ "date": datetime.datetime.today().isoformat(' '),
-            #~ "table": getTableString(inputHists)
-        #~ })
+    #  ~updateFile("indexTemplate.html", "index.html",
+        #  ~{
+            #  ~"date": datetime.datetime.today().isoformat(' '),
+            #  ~"table": getTableString(inputHists)
+        #  ~})
     updateFile("indexTemplate.html", "/eos/project/c/cmsweb/www/pixAlignSurv/index.html",
         {
             "date": datetime.datetime.today().isoformat(' '),

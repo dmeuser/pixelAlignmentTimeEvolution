@@ -122,7 +122,8 @@ def getLastRun(path="./"):
     return maxRun
 
 #  ~def getNewestDataset(pattern="/StreamExpress/Run2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):		#Proton runs
-def getNewestDataset(pattern="/StreamHIExpress/HIRun2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):	#Ion runs
+#  ~def getNewestDataset(pattern="/StreamHIExpress/HIRun2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):	#Ion runs
+def getNewestDataset(pattern="/StreamExpress/Commissioning2021-PromptCalibProdSiPixelAli-Express-v1/ALCAPROMPT"):	#Ion runs
     out = subprocess.check_output(["dasgoclient -query='dataset={}'".format(pattern)], shell=True)
     return out.split("\n")[-2]
 
