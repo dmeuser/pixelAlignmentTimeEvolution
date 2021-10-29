@@ -101,6 +101,9 @@ def saveAsFile(data, run, path="./"):
                 rootType = 'TProfile'
             h = t.ReadObject(eval(rootType+'.Class()'))
             h.Write(item['obj'])
+        if 'obj' in item.keys() and item['obj'] == "PedeExitCode":
+            temp = TObjString(item['value'])
+            temp.Write(item['obj'])
     f.Close()
 
 def getRuns(dataset):

@@ -18,6 +18,7 @@ import ast
 import suppressor
 #with suppressor.suppress_stdout_stderr(): 
 import ROOT
+from ROOT import gPad, gStyle
 import downloadViaJson
 import style
 
@@ -109,6 +110,22 @@ def getInputHists(searchPath="root-files/Run*.root"):
                     newHists[p.name] = h
         if newHists: hists[runNr] = newHists
     return sortedDict(hists)
+    
+def getPedeExitCodes(searchPath="root-files/Run*.root"):
+    exitCodes = {}
+    for filename in glob.glob(searchPath):
+        runNr = runFromFilename(filename)
+        exitCode = getFromFile(filename,"PedeExitCode")
+        exitCodes[runNr] = exitCode
+    return sortedDict(exitCodes)
+    
+def getStatusPlots(searchPath="root-files/Run*.root"):
+    statusPlots = {}
+    for filename in glob.glob(searchPath):
+        runNr = runFromFilename(filename)
+        statusPlot = getFromFile(filename,"statusResults")
+        statusPlots[runNr] = statusPlot
+    return sortedDict(statusPlots)
 
 def exceedsCuts(h, cutDict=False):
     maxErrCut = 10
@@ -188,11 +205,13 @@ def drawHists(hmap, savename, run):
     c = ROOT.TCanvas(randomName(),"",1200,600)
     c.Divide(3,2)
     dbUpdated = False
+    gStyle.SetLineScalePS(1.5)
     for ih, hname in enumerate(hnames):
         c.cd(ih+1)
         h = hmap[hname]
         h.SetLineColor(ROOT.kBlack)
         h.SetFillColor(ROOT.kGreen-7)
+        h.SetMarkerSize(0)
         cutStatus = exceedsCuts(h)
         if cutStatus == "update":
             h.SetFillColor(ROOT.kOrange-9)
@@ -206,16 +225,18 @@ def drawHists(hmap, savename, run):
         h.SetTitle("")
         h.GetYaxis().SetTitle(parameters[ih].label)
         h.Draw("histe")
+        h.Draw("same e")
         cut = h.GetBinContent(8)
         if not cut:
             cuts = {"Xpos":5, "Ypos":10, "Zpos":15, "Xrot":30, "Yrot":30, "Zrot":30}
             cut = cuts[h.GetName().split("_")[0]]
         line.DrawLine(0,-cut,6,-cut)
         line.DrawLine(0,+cut,6,+cut)
+        gPad.RedrawAxis()
     c.cd(0)
     text = ROOT.TLatex()
     text.SetTextSize(.75*text.GetTextSize())
-    text.DrawLatexNDC(.05, .967, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
+    text.DrawLatexNDC(.06, .967, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
     #  ~text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
     text.DrawLatexNDC(.82, .967, "Run {}".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
@@ -266,11 +287,25 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
         #    updateLine.SetLineColor(ROOT.kGreen)
         #    updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
         text = ROOT.TLatex()
-        text.DrawLatexNDC(.15, .95, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
+        text.DrawLatexNDC(.155, .955, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
         #  ~text.DrawLatexNDC(.79, .945, "Year 2018 (13TeV)")
-        text.DrawLatexNDC(.73, .95, "Commissioning 2021")
+        text.DrawLatexNDC(.73, .96, "Commissioning 2021")
         if ip == 0: leg.Draw()
         save(savename+"_"+p.name, plotDir, endings=[".pdf",".png", ".root"])
+        
+def drawDetails(hmap, statusPlot, exitCode, savename, run):
+    steps = ["DB update triggered", "significant movement","DB update vetoed", "within max movement", "within max error", "above significance"]
+    c = ROOT.TCanvas(randomName(),"",700,500)
+    text = ROOT.TLatex()
+    text.SetTextSize(0.04)
+    text.DrawLatexNDC(.02, .955, "Details on PCL Alignment for Run "+str(run))
+    text.DrawLatexNDC(.02, .855, "PedeExitCode: "+exitCode.GetString().Data())
+    for bin in range(1,statusPlot.GetNbinsX()+1):
+        text.SetTextColor(ROOT.kGreen-7)
+        if statusPlot.GetBinContent(bin,1)==0:
+            text.SetTextColor(ROOT.kRed)
+        text.DrawLatexNDC(.02, .855-bin*0.1, steps[bin-1])
+    save(savename, plotDir, [".pdf"])
 
 
 def string2Time(timeStr):
@@ -313,16 +348,17 @@ def isFilledRun(hmap):
 
 def getTableString(inputHists, maxPlots=5):
     inputHists = collections.OrderedDict(reversed(list(inputHists.items())))
-    outString = "<table>\n<tr> <td> Run </td> <td> End time </td> <td>Parameters</td> </tr>"
+    outString = "<table style='text-align:center'>\n<tr> <td> Run </td> <td> End time </td> <td> Details </td> <td> Parameters </td> </tr>"
     for run, hmap in inputHists.iteritems():
-        link = "No results"
+        link = "<td style='text-align:left'>No results"
+        linkDet = "<a href=plots/detailsRun{0}.pdf>details</a>".format(run)
         if isFilledRun(hmap):
             if maxPlots > 0:
-                link = "<a href=plots/Run{0}.pdf><img src='plots/Run{0}.png' border='0'/></a>".format(run)
+                link = "<td><a href=plots/Run{0}.pdf><img src='plots/Run{0}.png' border='0'/></a>".format(run)
                 maxPlots -= 1
             else:
-                link = "<a href=plots/Run{0}.pdf>pdf</a>".format(run)
-        outString += "\n<tr> <td>{0}</td> <td>{1}</td> <td>{2}</td> </tr>".format(run, getTime(run), link)
+                link = "<td style='text-align:left'><a href=plots/Run{0}.pdf>pdf</a>".format(run)
+        outString += "\n<tr> <td>{0}</td> <td>{1}</td> <td>{2}</td> {3}</td> </tr>".format(run, getTime(run), linkDet, link)
     outString += "\n</table>"
     return outString
 
@@ -334,12 +370,15 @@ if __name__ == "__main__":
     downloadViaJson.getGridCertificat()
     downloadViaJson.downloadViaJson()
     inputHists = getInputHists()
+    exitCodes = getPedeExitCodes()
+    statusPlots = getStatusPlots()
 
     # draw new runs:
     alreadyPlotted = [ int(x[3:9]) for x in os.listdir(plotDir) if x.endswith(".pdf") and x.startswith("Run")]
     for run, hmap in inputHists.iteritems():
         if run not in alreadyPlotted:
             drawHists(hmap, "Run{}".format(run), run)
+            drawDetails(hmap, statusPlots[run], exitCodes[run], "detailsRun{}".format(run), run)
 
 		
     # vs run
