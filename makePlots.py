@@ -241,8 +241,8 @@ def drawHists(hmap, savename, run):
     text.DrawLatexNDC(.82, .967, "Run {}".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
     if dbUpdated:
-        #  ~sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
-        sendMail("danilo.meuser@rwth-aachen.de", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
+        sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch musich@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
+        #  ~sendMail("danilo.meuser@rwth-aachen.de", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
     """ Options for xaxis: time, run"""
@@ -288,8 +288,9 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
         #    updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
         text = ROOT.TLatex()
         text.DrawLatexNDC(.155, .955, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
-        #  ~text.DrawLatexNDC(.79, .945, "Year 2018 (13TeV)")
-        text.DrawLatexNDC(.73, .96, "Commissioning 2021")
+        text.DrawLatexNDC(.73, .96, "Year 2022 (13.6TeV)")
+        #  ~text.DrawLatexNDC(.73, .96, "Commissioning 2021")
+        #  ~text.DrawLatexNDC(.73, .96, "Commissioning 21/22")
         if ip == 0: leg.Draw()
         save(savename+"_"+p.name, plotDir, endings=[".pdf",".png", ".root"])
         
@@ -386,7 +387,7 @@ if __name__ == "__main__":
     #updateRuns2 = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
     #  ~updateRuns  = [x for x in getUpdateRuns("SiPixelLorentzAngle_fromAlignment_v1_hlt") if x >= 315252]
     #  ~updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject_38T_v1_prompt") if x >= 315252]
-    updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject_38T_v1_prompt") if x >= 327575]
+    updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject_38T_v1_prompt") if x >= 355094]
     #  ~updateRuns  = []
     #updateRuns2 = [x for x in getUpdateRuns("101X_dataRun2_Queue") if x >= 315000]
     updateRuns2 = []
