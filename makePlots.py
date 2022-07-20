@@ -21,6 +21,7 @@ import ROOT
 from ROOT import gPad, gStyle
 import downloadViaJson
 import style
+import datetime
 
 class Parameter:
     name = ""
@@ -241,8 +242,10 @@ def drawHists(hmap, savename, run):
     text.DrawLatexNDC(.82, .967, "Run {}".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
     if dbUpdated:
-        sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch musich@cern.ch", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
-        #  ~sendMail("danilo.meuser@rwth-aachen.de", "[PCL] Cuts exceeded", "Run: {}\nSee http://cern.ch/cmsPixAlignSurv".format(run))
+        start_delta = datetime.timedelta(weeks=1)
+        dateStringToday = datetime.date.today().strftime("%Y-%m-%d")
+        dateStringLastWeek = (datetime.date.today()-start_delta).strftime("%Y-%m-%d")
+        sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch musich@cern.ch", "[PCL] Thresholds exceeded", "Run: {}\nWebpage http://cern.ch/cmsPixAlignSurv \nUpload log: https://cms-conddb.cern.ch/cmsDbBrowser/logs/condition_uploader_logs/Prod/{}/{}/None/None/Run{}%40SiPixelAli_pcl/None/None/None/any".format(run,dateStringLastWeek,dateStringToday,run))
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
     """ Options for xaxis: time, run"""
