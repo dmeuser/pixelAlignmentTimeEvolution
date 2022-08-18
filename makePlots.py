@@ -206,6 +206,7 @@ def drawHists(hmap, savename, run):
     c = ROOT.TCanvas(randomName(),"",1200,600)
     c.Divide(3,2)
     dbUpdated = False
+    updateVetoed = False
     gStyle.SetLineScalePS(1.5)
     for ih, hname in enumerate(hnames):
         c.cd(ih+1)
@@ -219,6 +220,7 @@ def drawHists(hmap, savename, run):
             dbUpdated = True
         elif cutStatus == "fail":
             h.SetFillColor(ROOT.kRed)
+            updateVetoed = True
         for bin in range(1,7):
             h.GetXaxis().SetBinLabel(bin,objects[bin-1][0])
         h.GetXaxis().SetRange(1,6)
@@ -241,7 +243,7 @@ def drawHists(hmap, savename, run):
     #  ~text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
     text.DrawLatexNDC(.82, .967, "Run {}".format(run))
     save(savename, plotDir, [".pdf",".png", ".root"])
-    if dbUpdated:
+    if dbUpdated and updateVetoed==False:
         start_delta = datetime.timedelta(weeks=1)
         dateStringToday = datetime.date.today().strftime("%Y-%m-%d")
         dateStringLastWeek = (datetime.date.today()-start_delta).strftime("%Y-%m-%d")

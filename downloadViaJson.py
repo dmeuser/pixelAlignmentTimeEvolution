@@ -128,7 +128,7 @@ def getLastRun(path="./"):
 #  ~def getNewestDataset(pattern="/StreamHIExpress/HIRun2018*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):	#Ion runs
 #  ~def getNewestDataset(pattern="/StreamExpress/Commissioning2021-PromptCalibProdSiPixelAli-Express-v1/ALCAPROMPT"):	
 #  ~def getNewestDataset(pattern="/StreamExpress/Run2022A-PromptCalibProdSiPixelAli-Express-v1/ALCAPROMPT"):	#Comissioning
-def getNewestDataset(pattern="/StreamExpress/Run2022C-PromptCalibProdSiPixelAli-Express-v1/ALCAPROMPT"):	#Proton runs 2022
+def getNewestDataset(pattern="/StreamExpress/Run2022D-PromptCalibProdSiPixelAli-Express-v1/ALCAPROMPT"):	#Proton runs 2022
     out = subprocess.check_output(["dasgoclient -query='dataset={}'".format(pattern)], shell=True)
     return out.split("\n")[-2]
 
@@ -152,6 +152,7 @@ def downloadViaJson():
         print "Get run", run
         data = dqm_get_json(serverurl, str(run), dataset, path)
         
+        print len(data['contents'])
         if len(data['contents'])>0:     # store only, if result already present in DQM file
             saveAsFile(data, run, outputFolder)
     return runs
