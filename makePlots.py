@@ -22,6 +22,8 @@ from ROOT import gPad, gStyle
 import downloadViaJson
 import style
 import datetime
+from random import randint
+from sys import maxsize
 
 class Parameter:
     name = ""
@@ -65,9 +67,7 @@ def randomName():
     Generate a random string. This function is useful to give ROOT objects
     different names to avoid overwriting.
     """
-    from random import randint
-    from sys import maxint
-    return "%x"%(randint(0, maxint))
+    return "%x"%(randint(0, maxsize))
 
 def runFromFilename(filename):
     m = re.match(".*Run(\d+).root", filename)
@@ -77,7 +77,7 @@ def runFromFilename(filename):
     if m2:
         return int(m2.group(1))
     else:
-        print "Could not find run number for file", filename
+        print("Could not find run number for file", filename)
         return 0
 
 def getFromFile(filename, objectname):
@@ -139,10 +139,13 @@ def exceedsCuts(h, cutDict=False):
     for bin in range(1,h.GetNbinsX()+1):
         c = abs(h.GetBinContent(bin))
         e = h.GetBinError(bin)
-        if c > maxCut or e > maxErrCut:
+        if c > maxCut:
             binInfos.append("fail")
         elif c > cut and e and c/e > sigCut:
-            binInfos.append("update")
+            if e <= maxErrCut:
+                binInfos.append("update")
+            else:
+                binInfos.append("fail")
         else:
             binInfos.append("good")
     if "fail" in binInfos:
@@ -185,12 +188,12 @@ def getLuminosity(minRun):
 def getTime(run, dbName="runTime.pkl"):
     db = {}
     if os.path.exists(dbName):
-        with open(dbName) as f:
+        with open(dbName,"rb") as f:
             db = pickle.load(f)
     if run not in db or db[run] == "\n" or db[run] == "0":
         db[run] = getRunEndTime(run)
         db[run] = db[run].replace('"','')
-        print "Get Time for run {}: {}".format(run, db[run])
+        print("Get Time for run {}: {}".format(run, db[run]))
     with open(dbName, "wb") as f:
         pickle.dump(db, f)
      
@@ -247,7 +250,7 @@ def drawHists(hmap, savename, run):
         start_delta = datetime.timedelta(weeks=1)
         dateStringToday = datetime.date.today().strftime("%Y-%m-%d")
         dateStringLastWeek = (datetime.date.today()-start_delta).strftime("%Y-%m-%d")
-        sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch musich@cern.ch", "[PCL] Thresholds exceeded", "Run: {}\nWebpage http://cern.ch/cmsPixAlignSurv \nUpload log: https://cms-conddb.cern.ch/cmsDbBrowser/logs/condition_uploader_logs/Prod/{}/{}/None/None/Run{}%40SiPixelAli_pcl/None/None/None/any".format(run,dateStringLastWeek,dateStringToday,run))
+        #  ~sendMail("danilo.meuser@rwth-aachen.de cms-tracker-alignment-conveners@cern.ch musich@cern.ch", "[PCL] Thresholds exceeded", "Run: {}\nWebpage http://cern.ch/cmsPixAlignSurv \nUpload log: https://cms-conddb.cern.ch/cmsDbBrowser/logs/condition_uploader_logs/Prod/{}/{}/None/None/Run{}%40SiPixelAli_pcl/None/None/None/any".format(run,dateStringLastWeek,dateStringToday,run))
 
 def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
     """ Options for xaxis: time, run"""
@@ -256,10 +259,15 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
     line.SetLineColor(ROOT.kGray)
     updateLine = ROOT.TLine()
     updateLine.SetLineStyle(2)
+    updateLine.SetLineColor(ROOT.kGray)
+    updateLine2 = ROOT.TLine()
+    updateLine2.SetLineStyle(2)
+    updateLine2.SetLineColor(ROOT.kGreen)
     leg = ROOT.TLegend(.2, .65, .55, .9)
     leg.SetNColumns(2)
     leg.AddEntry(line, "Limit", "l")
     leg.AddEntry(updateLine, "New alignment", "l")
+    leg.AddEntry(updateLine2, "New pixel template", "l")
     for ip, p in enumerate(parameters):
         c = ROOT.TCanvas(randomName(),"",1200,600)
         for ig,g in enumerate(gmap[p.name]):
@@ -274,7 +282,7 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
                 g.GetXaxis().SetNoExponent()
                 g.GetXaxis().SetNdivisions(7,0,0)
             else:
-                print "No idea what to do with x-axis", xaxis
+                print("No idea what to do with x-axis", xaxis)
             g.GetYaxis().SetRangeUser(p.minDraw, p.maxDraw)
             g.SetMarkerColor(objects[ig][1])
             g.SetLineColor(objects[ig][1])
@@ -286,15 +294,13 @@ def drawGraphsVsX(gmap, xaxis, savename, specialRuns=[], specialRuns2=[]):
         line.DrawLine(xmin, -p.cut, xmax, -p.cut)
         line.DrawLine(xmin, +p.cut, xmax, +p.cut)
         for r in specialRuns:
-            updateLine.SetLineColor(ROOT.kGray)
             updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
-        #for r in specialRuns2:
-        #    updateLine.SetLineColor(ROOT.kGreen)
-        #    updateLine.DrawLine(r, p.minDraw, r, p.maxDraw)
+        for r in specialRuns2:
+            updateLine2.DrawLine(r, p.minDraw, r, p.maxDraw)
         text = ROOT.TLatex()
         text.DrawLatexNDC(.155, .955, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
-        text.DrawLatexNDC(.73, .96, "Year 2022 (13.6TeV)")
-        #  ~text.DrawLatexNDC(.73, .96, "Commissioning 2021")
+        #  ~text.DrawLatexNDC(.73, .96, "Year 2023 (13.6TeV)")
+        text.DrawLatexNDC(.73, .96, "Commissioning 2024")
         #  ~text.DrawLatexNDC(.73, .96, "Commissioning 21/22")
         if ip == 0: leg.Draw()
         save(savename+"_"+p.name, plotDir, endings=[".pdf",".png", ".root"])
@@ -318,13 +324,13 @@ def string2Time(timeStr):
     return ROOT.TDatime(timeStr).Convert(0)
 
 def getGraphsVsRun(inputHists, minRun=-1, convertToTime=False):
-    inputHists = sortedDict(dict((key,value) for key, value in inputHists.iteritems() if key >= minRun))
+    inputHists = sortedDict(dict((key,value) for key, value in inputHists.items() if key >= minRun))
     gdefault = ROOT.TGraphErrors()
     graphsVsRun = {}
-    for iRun, (runNr, hmap) in enumerate(inputHists.iteritems()):
+    for iRun, (runNr, hmap) in enumerate(inputHists.items()):
         if convertToTime and getTime(runNr)=="0": continue #remove runs with no valid time stamp from plot vs time
         xVar = string2Time(getTime(runNr)) if convertToTime else runNr
-        for hname, h in hmap.iteritems():
+        for hname, h in hmap.items():
             if hname not in graphsVsRun: graphsVsRun[hname] = [ gdefault.Clone() for i in range(6) ]
             for bin in range(1,7):
                 c = h.GetBinContent(bin)
@@ -347,7 +353,7 @@ def getNthLastRun(inputHists, N):
 
 def isFilledRun(hmap):
     globalMax = 0
-    for k, v in hmap.iteritems():
+    for k, v in hmap.items():
         for bin in range(1,7):
             globalMax = max(globalMax, v.GetBinContent(bin))
     return abs(globalMax) > 1e-6
@@ -355,7 +361,7 @@ def isFilledRun(hmap):
 def getTableString(inputHists, maxPlots=5):
     inputHists = collections.OrderedDict(reversed(list(inputHists.items())))
     outString = "<table style='text-align:center'>\n<tr> <td> Run </td> <td> End time </td> <td> Details </td> <td> Parameters </td> </tr>"
-    for run, hmap in inputHists.iteritems():
+    for run, hmap in inputHists.items():
         link = "<td style='text-align:left'>No results"
         linkDet = "<a href=plots/detailsRun{0}.pdf>details</a>".format(run)
         if isFilledRun(hmap):
@@ -369,8 +375,13 @@ def getTableString(inputHists, maxPlots=5):
     return outString
 
 def getUpdateRuns(tag):
-    out = subprocess.check_output(["conddb", "list", tag])
-    return [int(x.split()[0]) for x in out.split("\n")[2:-2] if x]
+    try:
+        out = subprocess.check_output(["conddb", "list", tag])
+        out_str = out.decode("utf-8")  # Decode bytes to string
+        return [int(x.split()[0]) for x in out_str.split("\n")[2:-2] if x]
+    except subprocess.CalledProcessError as e:
+        print("Error:", e)
+        return []
 
 if __name__ == "__main__":
     downloadViaJson.getGridCertificat()
@@ -381,7 +392,7 @@ if __name__ == "__main__":
 
     # draw new runs:
     alreadyPlotted = [ int(x[3:9]) for x in os.listdir(plotDir) if x.endswith(".pdf") and x.startswith("Run")]
-    for run, hmap in inputHists.iteritems():
+    for run, hmap in inputHists.items():
         if run not in alreadyPlotted:
             drawHists(hmap, "Run{}".format(run), run)
             drawDetails(hmap, statusPlots[run], exitCodes[run], "detailsRun{}".format(run), run)
@@ -392,17 +403,17 @@ if __name__ == "__main__":
     #updateRuns2 = [x for x in getUpdateRuns("TrackerAlignment_PCL_byRun_v0_express") if x >= 273000]
     #  ~updateRuns  = [x for x in getUpdateRuns("SiPixelLorentzAngle_fromAlignment_v1_hlt") if x >= 315252]
     #  ~updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject_38T_v1_prompt") if x >= 315252]
-    updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject_38T_v1_prompt") if x >= 355094]
-    #  ~updateRuns  = []
-    #updateRuns2 = [x for x in getUpdateRuns("101X_dataRun2_Queue") if x >= 315000]
-    updateRuns2 = []
+    #  ~updateRuns  = [x for x in getUpdateRuns("SiPixelTemplateDBObject38Tv3_express") if x >= 355094]
+    updateRuns  = []
+    updateRuns2 = [x for x in getUpdateRuns("SiPixelTemplateDBObject38Tv3_express") if x >= 355094]
+    #  ~updateRuns2 = []
     graphsVsRun = getGraphsVsRun(inputHists)
     
-    print "Starting with plots vs run number:"
+    print("Starting with plots vs run number:")
     drawGraphsVsX(graphsVsRun, "run", "vsRun", updateRuns, updateRuns2)
 
     # vs time
-    print "Starting with plots vs time:"
+    print("Starting with plots vs time:")
     updateTimes = [string2Time(getTime(x)) for x in updateRuns]
     updateTimes2 = [] #[string2Time(getTime(x)) for x in updateRuns2]
     graphsVsTime = getGraphsVsRun(inputHists, convertToTime=True)
