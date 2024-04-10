@@ -161,14 +161,15 @@ def getRunEndTime(run):
     while foundtimestr == "0":
         try:
             #returs a string similar to 2016-06-16 23:30:32
-            output = subprocess.check_output(["conddb listRuns --match {} | grep \"{} \"".format(currentRun,currentRun)], shell=True)
+            output = str(subprocess.check_output(["conddb listRuns --match {} | grep \"{} \"".format(currentRun,currentRun)], shell=True),encoding="utf-8")
             output = output.split("  ")
             output = output[4].split(".")[0]
             foundtimestr = output
             datetime.datetime.strptime(foundtimestr, "%Y-%m-%d %H:%M:%S")
         except KeyboardInterrupt:
             raise
-        except:
+        except subprocess.CalledProcessError as e:
+            print(e)
             currentRun -= 1
     return foundtimestr
     		
@@ -384,8 +385,8 @@ def getUpdateRuns(tag):
         return []
 
 if __name__ == "__main__":
-    downloadViaJson.getGridCertificat()
-    downloadViaJson.downloadViaJson()
+    proxyName = downloadViaJson.getGridCertificat()
+    downloadViaJson.downloadViaJson(proxyName)
     inputHists = getInputHists()
     exitCodes = getPedeExitCodes()
     statusPlots = getStatusPlots()

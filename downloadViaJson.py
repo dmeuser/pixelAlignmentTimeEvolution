@@ -81,8 +81,7 @@ def x509_params(proxyName):
     return key_file, cert_file
 
 
-def dqm_get_json(server, run, dataset, path):
-    proxyName = getGridCertificat()
+def dqm_get_json(server, run, dataset, path, proxyName):
     X509CertAuth.ssl_key_file, X509CertAuth.ssl_cert_file = x509_params(proxyName)
     datareq = urllib.request.Request('%s/data/json/archive/%s%s/%s?rootcontent=1'
                                      % (server, run, dataset, path))
@@ -165,11 +164,19 @@ def downloadViaEOS(run, dataset, outputPath):
 
 
 def getNewestDataset(pattern="/StreamExpress/Run2024*-PromptCalibProdSiPixelAli-Express-v*/ALCAPROMPT"):  # Proton runs 2024
-    out = subprocess.check_output(["dasgoclient -query='dataset={}'".format(pattern)], shell=True)
-    return out.split(b"\n")[-2].decode("utf-8")
+    attemps = 0
+    while attemps<=10:
+        try:
+            out = subprocess.check_output(["dasgoclient -query='dataset={}'".format(pattern)], shell=True)
+            print("Connection successfull in attemp number {}".format(str(attemps)))
+            return out.split(b"\n")[-2].decode("utf-8")
+        except subprocess.CalledProcessError as e:
+            print("Connection failed in attemp number {}".format(str(attemps)))
+            attemps+=1
+    print("Reached maximum connection attemps")
 
 
-def downloadViaJson():
+def downloadViaJson(proxyName):
     dataset = "" or getNewestDataset()
     print(dataset)
     path = "/AlCaReco/SiPixelAli"
@@ -185,7 +192,7 @@ def downloadViaJson():
 
     for run in runs:
         print("Get run", run)
-        data = dqm_get_json(serverurl, str(run), dataset, path)
+        data = dqm_get_json(serverurl, str(run), dataset, path, proxyName)
 
         print(len(data['contents']))
         if len(data['contents']) > 1:  # store only, if result already present in DQM file
@@ -197,4 +204,5 @@ def downloadViaJson():
 
 
 if __name__ == "__main__":
-    downloadViaJson()
+    proxyName = downloadViaJson.getGridCertificat()
+    downloadViaJson(proxyName)
